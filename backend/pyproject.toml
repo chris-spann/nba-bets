@@ -1,0 +1,47 @@
+[tool.black]
+line-length = 100
+
+[tool.ruff]
+select = ["B", "C", "E", "F", "B9"]
+fixable = ["B", "C", "E", "F", "B9"]
+ignore = ["E501", "B008"]
+exclude = [
+    "__init__.py",
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".github",
+    ".git-rewrite",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+    ".vscode",
+]
+
+[tool.pytest.ini_options]
+addopts = "-ra -v --cov=app --cov-report term-missing"
+asyncio_mode = "auto"
+filterwarnings = [
+    "ignore:'crypt' is deprecated and slated for removal"
+]
+markers = ["pytest.mark.asyncio"]
+minversion = "6.0"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+omit = ["*/tests/*", "*/__init__.py"]
+concurrency = ["greenlet"]
