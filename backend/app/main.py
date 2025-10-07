@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -8,7 +9,7 @@ from app.routers import bets
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     """Application lifespan events"""
     # Startup
     await create_tables()
@@ -43,7 +44,7 @@ async def root():
     return {
         "message": f"Welcome to {settings.app_name}",
         "version": settings.version,
-        "status": "healthy"
+        "status": "healthy",
     }
 
 

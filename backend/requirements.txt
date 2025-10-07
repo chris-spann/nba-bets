@@ -1,13 +1,11 @@
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-sqlmodel==0.0.14
-asyncpg==0.29.0
-alembic==1.13.1
-python-multipart==0.0.6
-pydantic-settings==2.1.0
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
-httpx==0.25.2
-python-dotenv==1.0.0
-greenlet==3.0.0
-gunicorn==21.2.0
+fastapi>=0.118.0
+uvicorn>=0.37.0
+sqlmodel>=0.0.25
+asyncpg>=0.30.0
+alembic>=1.16.5
+python-multipart>=0.0.9
+pydantic-settings>=2.5.0
+httpx>=0.25.2
+python-dotenv>=1.0.0
+# greenlet>=3.1.0  # Skip greenlet for now - not required for basic functionality
+gunicorn>=22.0.0

@@ -4,7 +4,6 @@ from sqlmodel import SQLModel
 
 from app.core.config import settings
 
-
 # Create async engine
 engine = create_async_engine(
     settings.database_url,

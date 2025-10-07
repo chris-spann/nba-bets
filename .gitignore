@@ -63,11 +63,13 @@ venv.bak/
 .ropeproject
 
 # IDEs
-.vscode/
 .idea/
 *.swp
 *.swo
 *~
+
+# VSCode - ignore entire directory
+.vscode/
 
 # OS
 .DS_Store
@@ -198,8 +200,6 @@ ehthumbs.db
 # JetBrains IDEs
 .idea/
 
-# VSCode
-.vscode/
 
 # Vim
 *.swp
@@ -207,3 +207,13 @@ ehthumbs.db
 
 # Alembic
 alembic.ini.bak
+
+# Docker/Network error files
+127.0.0.1:*
+*.0.0.1:*
+localhost:*
+
+# NPM error logs
+*.log
+npm-debug.log*
+.npm/_logs/

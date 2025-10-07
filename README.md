@@ -28,26 +28,28 @@ A full-stack web application for tracking NBA prop bets, analyzing betting perfo
 - **Python 3.13** - Latest Python features and performance
 
 ### Frontend  
-- **React 18** - Modern UI framework
-- **TypeScript** - Type-safe JavaScript
-- **Vite** - Lightning-fast build tool with HMR
-- **Tailwind CSS** - Utility-first CSS framework
+- **React 18** - Modern UI framework with concurrent features
+- **TypeScript** - Type-safe JavaScript with verbatimModuleSyntax
+- **Vite 7** - Lightning-fast build tool with HMR
+- **Tailwind CSS v4** - Latest utility-first CSS framework with CSS-based config
 - **React Query** - Powerful data fetching and caching
-- **React Router** - Client-side routing
+- **React Router v7** - Client-side routing
 
 ### Development & Deployment
 - **Docker** - Containerized development and deployment
-- **Docker Compose** - Multi-service orchestration
-- **uv** - Fast Python package management
+- **Docker Compose** - Multi-service orchestration with health checks
+- **uv** - Fast Python package management and virtual environments
+- **Node.js 20+** - Latest LTS with optimal Vite compatibility
 - **GitHub Actions** - CI/CD pipelines
-- **Ruff + Black** - Python linting and formatting
+- **Astral Stack** - Modern Python tooling (uv + ruff + ty)
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 - **Docker & Docker Compose** - For containerized development
-- **Node.js 22+** - For frontend development (if running outside Docker)
+- **Node.js 20.19+** - Required for Vite 7 compatibility (use nvm to manage versions)
 - **Python 3.13+** - For backend development (if running outside Docker)
+- **PostgreSQL** - Local installation will conflict with Docker on port 5432
 
 ### Development Setup
 
@@ -62,7 +64,7 @@ A full-stack web application for tracking NBA prop bets, analyzing betting perfo
    make dev
    ```
    This will start:
-   - PostgreSQL database on port 5432
+   - PostgreSQL database on port 5433 (Docker internal: 5432)
    - FastAPI backend on port 8000  
    - React frontend on port 5173
 
@@ -191,6 +193,57 @@ API_PREFIX=/api/v1
 ```
 
 See `backend/.env.template` for all available options.
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+#### Port 5432 Already in Use
+If you get a "port 5432 already in use" error, you likely have PostgreSQL running locally:
+```bash
+# Check what's using the port
+lsof -i :5432
+ps aux | grep postgres
+
+# Stop local PostgreSQL (macOS with Homebrew)
+brew services stop postgresql@14
+# or
+sudo launchctl unload /Library/LaunchDaemons/com.edb.launchd.postgresql-14.plist
+```
+
+#### Node.js Version Issues
+Vite 7 requires Node.js 20.19+. Use nvm to manage versions:
+```bash
+nvm install 20
+nvm use 20
+nvm alias default 20
+```
+
+#### TypeScript verbatimModuleSyntax Errors
+If you see "must be imported using a type-only import" errors:
+```typescript
+// ❌ Wrong
+import { ReactNode } from 'react'
+
+// ✅ Correct
+import { type ReactNode } from 'react'
+```
+
+#### Tailwind CSS Not Working
+If styles aren't applying after upgrading to Tailwind v4:
+1. Ensure you have `@tailwindcss/postcss` installed
+2. Check that `index.css` uses `@import "tailwindcss"` instead of `@tailwind` directives
+3. Remove old `tailwind.config.js` file (v4 uses CSS-based config)
+
+#### Docker Issues
+```bash
+# Clean up Docker state
+make clean
+docker system prune -f
+
+# Rebuild from scratch
+make build
+```
 
 ## 📦 Project Structure
 

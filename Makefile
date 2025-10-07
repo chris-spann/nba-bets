@@ -8,52 +8,52 @@ help: ## Show this help message
 
 # Docker Commands
 build: ## Build all Docker images
-	docker-compose build
+	docker compose build
 
 up: ## Start all services in development mode
-	docker-compose up -d
+	docker compose up -d
 
 down: ## Stop all services
-	docker-compose down
+	docker compose down
 
 logs: ## Show logs from all services
-	docker-compose logs -f
+	docker compose logs -f
 
 clean: ## Remove all containers, volumes, and images
-	docker-compose down -v --remove-orphans
+	docker compose down -v --remove-orphans
 	docker system prune -f
 
 # Development Commands
 dev: ## Start development environment
 	@echo "Starting NBA Bets development environment..."
-	docker-compose up --build
+	docker compose up --build
 
 dev-backend: ## Start only backend services (postgres + api)
-	docker-compose up postgres backend
+	docker compose up postgres backend
 
 dev-frontend: ## Start only frontend
 	cd frontend && npm run dev
 
 # Database Commands
 migrate: ## Run database migrations
-	docker-compose exec backend alembic upgrade head
+	docker compose exec backend alembic upgrade head
 
 migrate-create: ## Create a new migration (use: make migrate-create MESSAGE="description")
-	docker-compose exec backend alembic revision --autogenerate -m "$(MESSAGE)"
+	docker compose exec backend alembic revision --autogenerate -m "$(MESSAGE)"
 
 migrate-rollback: ## Rollback last migration
-	docker-compose exec backend alembic downgrade -1
+	docker compose exec backend alembic downgrade -1
 
 db-reset: ## Reset database (WARNING: destroys all data)
-	docker-compose down -v
-	docker-compose up -d postgres
+	docker compose down -v
+	docker compose up -d postgres
 	@echo "Waiting for postgres to be ready..."
 	@sleep 5
-	docker-compose up backend -d
+	docker compose up backend -d
 	$(MAKE) migrate
 
 seed: ## Seed database with sample data
-	docker-compose exec backend python -m scripts.seed_data
+	docker compose exec backend python -m scripts.seed_data
 
 # Testing Commands
 test: ## Run all tests
@@ -61,7 +61,7 @@ test: ## Run all tests
 	$(MAKE) test-frontend
 
 test-backend: ## Run backend tests
-	cd backend && uv run pytest -v
+	cd backend && ./.venv/bin/pytest -v
 
 test-frontend: ## Run frontend tests
 	cd frontend && npm run test -- --run
@@ -72,10 +72,17 @@ test-watch: ## Run backend tests in watch mode
 # Linting and Formatting
 lint: ## Lint all code
 	$(MAKE) lint-backend
+	$(MAKE) type-check
 	$(MAKE) lint-frontend
 
 lint-backend: ## Lint backend code
-	cd backend && uv run ruff check .
+	cd backend && ./.venv/bin/ruff check .
+
+type-check: ## Run type checking with ty
+	cd backend && ./.venv/bin/ty check
+
+type-check-watch: ## Run type checking in watch mode
+	cd backend && ./.venv/bin/ty check --watch
 
 lint-frontend: ## Lint frontend code
 	cd frontend && npm run lint
@@ -85,14 +92,14 @@ format: ## Format all code
 	$(MAKE) format-frontend
 
 format-backend: ## Format backend code
-	cd backend && uv run black . && uv run ruff check --fix .
+	cd backend && ./.venv/bin/ruff check --fix . && ./.venv/bin/ruff format .
 
 format-frontend: ## Format frontend code
 	cd frontend && npm run format
 
 # Production Commands
 prod-build: ## Build production images
-	docker-compose -f docker-compose.prod.yml build
+	docker compose -f docker-compose.prod.yml build
 
 prod-up: ## Start production environment
-	docker-compose -f docker-compose.prod.yml up -d
+	docker compose -f docker-compose.prod.yml up -d
