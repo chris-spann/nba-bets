@@ -1,0 +1,320 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+env:
+  PYTHON_VERSION: '3.13'
+  NODE_VERSION: '22'
+
+jobs:
+  # Fast checks that can run in parallel
+  quick-checks:
+    name: Code Quality & Linting
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          # Backend dependencies
+          cd backend && uv sync --group dev
+
+          # Frontend dependencies
+          cd ../frontend && npm ci
+
+          # Global tools
+          npm install -g markdownlint-cli
+
+      - name: Run all linting & formatting checks
+        run: |
+          # Backend linting
+          make lint-backend
+
+          # Frontend linting
+          make lint-frontend
+
+          # Documentation linting
+          make check-markdown || true
+
+          # YAML & JSON validation
+          make check-yaml || true
+          make check-json || true
+
+      - name: Run security checks
+        run: |
+          # Python security
+          cd backend
+          uv run bandit -r . -f json -o bandit-report.json || true
+          uv run safety check --json || true
+
+          # Node.js security
+          cd ../frontend
+          npm audit --audit-level moderate || true
+        continue-on-error: true
+
+      - name: Check for secrets
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+        continue-on-error: true
+
+  # Unit tests with coverage
+  tests:
+    name: Unit Tests & Coverage
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: nba_bets_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd backend && uv sync --group dev
+          cd ../frontend && npm ci
+
+      - name: Run backend tests with coverage
+        run: make test-backend-coverage
+        env:
+          POSTGRES_SERVER: localhost
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: nba_bets_test
+          POSTGRES_PORT: 5432
+
+      - name: Run frontend tests with coverage
+        run: make test-frontend-coverage
+
+      - name: Upload backend coverage
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./backend/coverage.xml
+          flags: backend
+          name: backend-coverage
+
+      - name: Upload frontend coverage
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./frontend/coverage/lcov.info
+          flags: frontend
+          name: frontend-coverage
+
+  # Docker build validation
+  docker-build:
+    name: Docker Build & Integration
+    runs-on: ubuntu-latest
+    needs: [quick-checks, tests]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Install hadolint
+        run: |
+          wget -O hadolint https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64
+          chmod +x hadolint
+          sudo mv hadolint /usr/local/bin/
+
+      - name: Lint Dockerfiles
+        run: make lint-docker
+
+      - name: Build and test Docker setup
+        run: |
+          # Build images
+          docker compose build
+
+          # Start services
+          docker compose up -d
+
+          # Wait for services to be ready
+          timeout 60 bash -c 'until curl -f http://localhost:8000/docs; do echo "Waiting for backend..."; sleep 5; done'
+          timeout 60 bash -c 'until curl -f http://localhost:5173; do echo "Waiting for frontend..."; sleep 5; done'
+
+          # Run database migration
+          docker compose exec -T backend alembic upgrade head
+
+          # Seed test data
+          docker compose exec -T backend python scripts/seed_data.py
+
+          # Test API endpoints
+          curl -f http://localhost:8000/api/v1/bets
+          curl -f http://localhost:8000/api/v1/bets/analytics/summary
+
+          # Test creating bets
+          curl -s -X POST http://localhost:8000/api/v1/bets \
+            -H "Content-Type: application/json" \
+            -d '{"bet_type": "player_prop", "bet_placed_date": "2024-01-16T10:00:00", "game_date": "2024-01-16T19:00:00", "team": "BOS", "opponent": "MIA", "wager_amount": 75.00, "odds": -120, "result": "pending", "player_name": "Jayson Tatum", "prop_type": "points", "prop_line": 27.5, "over_under": "over"}'
+
+          # Test frontend-backend connectivity
+          FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5173)
+          API_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/api/v1/bets)
+
+          if [ "$FRONTEND_STATUS" != "200" ] || [ "$API_STATUS" != "200" ]; then
+            echo "Service connectivity test failed"
+            exit 1
+          fi
+
+          echo "All integration tests passed!"
+
+      - name: Collect logs on failure
+        if: failure()
+        run: |
+          echo "=== Docker Compose Logs ==="
+          docker compose logs
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker compose down -v
+
+  # Pre-commit validation (runs in parallel with tests)
+  pre-commit:
+    name: Pre-commit Hooks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd backend && uv sync --group dev
+          cd ../frontend && npm ci
+          npm install -g markdownlint-cli
+
+      - name: Run pre-commit on all files
+        run: |
+          cd backend
+          uv run pre-commit run --all-files
+        continue-on-error: true
+
+  # Summary job that reports final status
+  ci-success:
+    name: ✅ CI Pipeline Complete
+    runs-on: ubuntu-latest
+    needs: [quick-checks, tests, docker-build, pre-commit]
+    if: always()
+
+    steps:
+      - name: Check all jobs status
+        run: |
+          if [[ "${{ needs.quick-checks.result }}" != "success" ]]; then
+            echo "❌ Code quality checks failed"
+            exit 1
+          fi
+
+          if [[ "${{ needs.tests.result }}" != "success" ]]; then
+            echo "❌ Unit tests failed"
+            exit 1
+          fi
+
+          if [[ "${{ needs.docker-build.result }}" != "success" ]]; then
+            echo "❌ Docker integration tests failed"
+            exit 1
+          fi
+
+          echo "✅ All CI checks passed successfully!"
+
+      - name: Add PR comment
+        if: github.event_name == 'pull_request' && (success() || failure())
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const checks = {
+              'Code Quality': '${{ needs.quick-checks.result }}',
+              'Unit Tests': '${{ needs.tests.result }}',
+              'Docker Build': '${{ needs.docker-build.result }}',
+              'Pre-commit': '${{ needs.pre-commit.result }}'
+            };
+
+            const passed = Object.values(checks).every(result => result === 'success');
+            const status = passed ? "✅ All checks passed!" : "❌ Some checks failed";
+
+            const checksList = Object.entries(checks)
+              .map(([name, result]) => `- **${name}**: ${result === 'success' ? '✅' : '❌'} ${result}`)
+              .join('\n');
+
+            const comment = `## 🤖 CI Pipeline Results
+
+**Status**: ${status}
+
+### Check Results:
+${checksList}
+
+${passed ?
+  "🎉 This PR is ready for review!" :
+  "⚠️  Please review the failed checks and fix any issues."
+}`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
