@@ -242,13 +242,13 @@ describe('Dashboard', () => {
 
     // Net P&L should be negative: (0 - 50) + (0 - 30) = -80
     await waitFor(() => {
-      expect(screen.getByText((content, element) => {
+      expect(screen.getByText((_, element) => {
         return element?.textContent === '$-80.00' || element?.textContent === '-$80.00'
       })).toBeInTheDocument()
     })
 
     // Should have red color for negative P&L
-    const plElement = screen.getByText((content, element) => {
+    const plElement = screen.getByText((_, element) => {
       return element?.textContent === '$-80.00' || element?.textContent === '-$80.00'
     })
     expect(plElement).toHaveClass('text-red-600')
@@ -368,7 +368,7 @@ describe('Dashboard', () => {
     })
 
     expect(screen.getByText('Add your first bet')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Add your first bet' })).toHaveAttribute('href', '/add-bet')
+    expect(screen.getByRole('link', { name: 'Add your first bet' })).toHaveAttribute('href', '/history')
   })
 
   it('limits recent activity to 5 bets', async () => {

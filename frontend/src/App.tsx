@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { Dashboard } from './pages/Dashboard'
 import { PropBets } from './pages/PropBets'
-import { AddBet } from './pages/AddBet'
 import './App.css'
 
 const queryClient = new QueryClient({
@@ -22,9 +21,9 @@ function App() {
         <Layout>
           <Routes>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/prop-bets" element={<PropBets />} />
-            <Route path="/add-bet" element={<AddBet />} />
+            <Route path="/history" element={<PropBets />} />
             {/* Legacy redirects */}
+            <Route path="/prop-bets" element={<PropBets />} />
             <Route path="/player-bets" element={<PropBets />} />
             <Route path="/team-bets" element={<PropBets />} />
           </Routes>

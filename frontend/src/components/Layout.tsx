@@ -1,6 +1,6 @@
 import { type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { BarChart3, Target, Plus } from 'lucide-react'
+import { BarChart3, Target } from 'lucide-react'
 import { clsx } from 'clsx'
 
 interface LayoutProps {
@@ -9,8 +9,7 @@ interface LayoutProps {
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: BarChart3 },
-  { name: 'Prop Bets', href: '/prop-bets', icon: Target },
-  { name: 'Add Bet', href: '/add-bet', icon: Plus },
+  { name: 'History', href: '/history', icon: Target },
 ]
 
 export function Layout({ children }: LayoutProps) {

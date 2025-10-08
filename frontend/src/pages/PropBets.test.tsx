@@ -10,6 +10,7 @@ import { api } from '../lib/api'
 vi.mock('../lib/api', () => ({
   api: {
     getBets: vi.fn(),
+    deleteBet: vi.fn(),
   },
 }))
 
@@ -44,8 +45,8 @@ describe('PropBets', () => {
     render(<PropBets />, { wrapper: Wrapper })
 
     // Wait for loading to complete and content to be rendered
-    expect(await screen.findByText('NBA Prop Bets')).toBeInTheDocument()
-    expect(screen.getByText(/Track all your NBA prop betting history/)).toBeInTheDocument()
+    expect(await screen.findByText('History')).toBeInTheDocument()
+    expect(screen.getByText(/Track all your NBA betting history/)).toBeInTheDocument()
   })
 
   it('handles empty state correctly when no bets are present', async () => {
@@ -54,8 +55,8 @@ describe('PropBets', () => {
     render(<PropBets />, { wrapper: Wrapper })
 
     // Should show empty state message when there are no bets
-    expect(await screen.findByText('No prop bets found.')).toBeInTheDocument()
-    expect(screen.getByText('Add your first prop bet')).toBeInTheDocument()
+    expect(await screen.findByText('No bets found.')).toBeInTheDocument()
+    expect(screen.getByText('Add your first bet')).toBeInTheDocument()
 
     // Table should not be rendered when there are no bets
     expect(screen.queryByRole('table')).not.toBeInTheDocument()
@@ -108,11 +109,12 @@ describe('PropBets', () => {
     // Check table headers
     expect(screen.getByText('Bet Placed')).toBeInTheDocument()
     expect(screen.getByText('Type')).toBeInTheDocument()
-    expect(screen.getByText('Prop Details')).toBeInTheDocument()
+    expect(screen.getByText('Details')).toBeInTheDocument()
     expect(screen.getByText('Game')).toBeInTheDocument()
     expect(screen.getByText('Wager')).toBeInTheDocument()
     expect(screen.getByText('Result')).toBeInTheDocument()
     expect(screen.getByText('P&L')).toBeInTheDocument()
+    expect(screen.getByText('Actions')).toBeInTheDocument()
   })
 
   it('displays bet data correctly in table rows', async () => {
@@ -223,7 +225,7 @@ describe('PropBets', () => {
         game_date: '2025-10-07T20:00:00',
         team: 'BOS',
         opponent: 'MIA',
-        prop_description: 'Team Total',
+        description: 'BOS',
         prop_line: '115.5',
         wager_amount: '30.00',
         odds: -110,
@@ -252,7 +254,7 @@ describe('PropBets', () => {
     render(<PropBets />, { wrapper: Wrapper })
 
     // Component should show error message
-    expect(await screen.findByText(/Error loading prop bets/)).toBeInTheDocument()
+    expect(await screen.findByText(/Error loading bets/)).toBeInTheDocument()
     expect(screen.getByText('Try again')).toBeInTheDocument()
   })
 
@@ -275,12 +277,12 @@ describe('PropBets', () => {
       },
       {
         id: 2,
-        bet_type: 'game_total',
+        bet_type: 'team_prop',
         bet_placed_date: '2025-10-07T18:00:00',
         game_date: '2025-10-07T20:00:00',
         team: 'BOS',
         opponent: 'MIA',
-        prop_description: 'Game Total',
+        description: 'BOS',
         prop_line: '215.5',
         wager_amount: '30.00',
         odds: -110,
@@ -293,14 +295,183 @@ describe('PropBets', () => {
     const Wrapper = createWrapper()
     render(<PropBets />, { wrapper: Wrapper })
 
-    // Wait for content and check category badges
+    // Wait for content and check bet type badges
     await waitFor(() => {
-      // Player category should be shown
-      expect(screen.getByText('Player')).toBeInTheDocument()
+      // Player Prop bet type should be shown
+      expect(screen.getByText('Player Prop')).toBeInTheDocument()
+      // Team Prop bet type should be shown
+      expect(screen.getByText('Team Prop')).toBeInTheDocument()
     })
-
-    // Game category should be shown (there are multiple "Game" elements - header + badge)
     const gameElements = screen.getAllByText('Game')
     expect(gameElements.length).toBeGreaterThan(0)
+  })
+
+  it('opens add bet modal when add button is clicked', async () => {
+    const user = userEvent.setup()
+    mockApi.getBets.mockResolvedValue([])
+    const Wrapper = createWrapper()
+    render(<PropBets />, { wrapper: Wrapper })
+
+    // Click the add bet button
+    const addButton = await screen.findByRole('button', { name: 'Add new bet' })
+    await user.click(addButton)
+
+    // Modal should appear
+    expect(screen.getByTestId('bet-modal')).toBeInTheDocument()
+    expect(screen.getByText('Add New Bet')).toBeInTheDocument()
+  })
+
+  it('opens add bet modal from empty state link', async () => {
+    const user = userEvent.setup()
+    mockApi.getBets.mockResolvedValue([])
+    const Wrapper = createWrapper()
+    render(<PropBets />, { wrapper: Wrapper })
+
+    // Click the "Add your first bet" link
+    const addLink = await screen.findByText('Add your first bet')
+    await user.click(addLink)
+
+    // Modal should appear
+    expect(screen.getByTestId('bet-modal')).toBeInTheDocument()
+    expect(screen.getByText('Add New Bet')).toBeInTheDocument()
+  })
+
+  it('opens edit modal when edit button is clicked', async () => {
+    const user = userEvent.setup()
+    const mockBets = [
+      {
+        id: 1,
+        bet_type: 'player_prop',
+        bet_placed_date: '2025-10-08T18:00:00',
+        game_date: '2025-10-08T20:00:00',
+        team: 'LAL',
+        opponent: 'GSW',
+        player_name: 'LeBron James',
+        prop_type: 'points',
+        prop_line: '25.5',
+        over_under: 'over',
+        wager_amount: '50.00',
+        odds: -110,
+        result: 'win',
+        payout: '95.45',
+        created_at: '2025-10-08T18:00:00',
+      },
+    ]
+
+    mockApi.getBets.mockResolvedValue(mockBets)
+    const Wrapper = createWrapper()
+    render(<PropBets />, { wrapper: Wrapper })
+
+    // Wait for bet data to load and find edit button
+    await waitFor(() => {
+      expect(screen.getByText('LeBron James Points')).toBeInTheDocument()
+    })
+
+    const editButton = screen.getByTitle('Edit bet')
+    await user.click(editButton)
+
+    // Edit modal should appear
+    expect(screen.getByTestId('bet-modal')).toBeInTheDocument()
+    expect(screen.getByText('Edit Bet')).toBeInTheDocument()
+  })
+
+  it('opens delete confirmation modal when delete button is clicked', async () => {
+    const user = userEvent.setup()
+    const mockBets = [
+      {
+        id: 1,
+        bet_type: 'player_prop',
+        bet_placed_date: '2025-10-08T18:00:00',
+        game_date: '2025-10-08T20:00:00',
+        team: 'LAL',
+        opponent: 'GSW',
+        player_name: 'LeBron James',
+        prop_type: 'points',
+        prop_line: '25.5',
+        over_under: 'over',
+        wager_amount: '50.00',
+        odds: -110,
+        result: 'win',
+        created_at: '2025-10-08T18:00:00',
+      },
+    ]
+
+    mockApi.getBets.mockResolvedValue(mockBets)
+    mockApi.deleteBet.mockResolvedValue(undefined)
+    const Wrapper = createWrapper()
+    render(<PropBets />, { wrapper: Wrapper })
+
+    // Wait for bet data to load and find delete button
+    await waitFor(() => {
+      expect(screen.getByText('LeBron James Points')).toBeInTheDocument()
+    })
+
+    const deleteButton = screen.getByTitle('Delete bet')
+    await user.click(deleteButton)
+
+    // Delete confirmation modal should appear
+    const deleteModal = screen.getByTestId('delete-modal')
+    expect(deleteModal).toBeInTheDocument()
+    // Look for the title inside the modal specifically
+    expect(deleteModal.querySelector('h2')).toHaveTextContent('Delete Bet')
+  })
+
+  it('deletes bet when confirmed in delete modal', async () => {
+    const user = userEvent.setup()
+    const mockBets = [
+      {
+        id: 1,
+        bet_type: 'player_prop',
+        bet_placed_date: '2025-10-08T18:00:00',
+        game_date: '2025-10-08T20:00:00',
+        team: 'LAL',
+        opponent: 'GSW',
+        player_name: 'LeBron James',
+        prop_type: 'points',
+        prop_line: '25.5',
+        over_under: 'over',
+        wager_amount: '50.00',
+        odds: -110,
+        result: 'win',
+        created_at: '2025-10-08T18:00:00',
+      },
+    ]
+
+    mockApi.getBets.mockResolvedValue(mockBets)
+    mockApi.deleteBet.mockResolvedValue(undefined)
+    const Wrapper = createWrapper()
+    render(<PropBets />, { wrapper: Wrapper })
+
+    // Open delete modal
+    await waitFor(() => {
+      expect(screen.getByText('LeBron James Points')).toBeInTheDocument()
+    })
+
+    const deleteButton = screen.getByTitle('Delete bet')
+    await user.click(deleteButton)
+
+    // Confirm deletion - find the button specifically, not the title
+    const confirmButton = await screen.findByRole('button', { name: 'Delete Bet' })
+    await user.click(confirmButton)
+
+    // API should be called
+    expect(mockApi.deleteBet).toHaveBeenCalledWith(1)
+  })
+
+  it('closes modals when cancel/close buttons are clicked', async () => {
+    const user = userEvent.setup()
+    mockApi.getBets.mockResolvedValue([])
+    const Wrapper = createWrapper()
+    render(<PropBets />, { wrapper: Wrapper })
+
+    // Open add modal
+    const addButton = await screen.findByRole('button', { name: 'Add new bet' })
+    await user.click(addButton)
+    expect(screen.getByTestId('bet-modal')).toBeInTheDocument()
+
+    // Close modal by clicking the X button instead of cancel (to avoid ambiguity)
+    const closeButton = screen.getByRole('button', { name: '' }) // X button has no accessible name
+    await user.click(closeButton)
+    expect(screen.queryByTestId('bet-modal')).not.toBeInTheDocument()
   })
 })

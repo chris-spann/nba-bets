@@ -39,7 +39,7 @@ class TestUnifiedBetAPI:
         assert response.status_code == 200
         data = response.json()
 
-        assert data["prop_description"] == "Boston Celtics Total Points"
+        assert data["description"] == "BOS-points"
         assert data["prop_line"] == "112.5"
         assert data["over_under"] == "over"
         assert data["wager_amount"] == "50.00"
@@ -49,29 +49,31 @@ class TestUnifiedBetAPI:
         assert data["game_date"] is not None
         assert data["id"] is not None
 
-    async def test_create_game_total_bet(self, client: AsyncClient, db_session: AsyncSession):
-        """Test creating a game total bet"""
-        game_total_data = {
-            "bet_type": "game_total",
+    async def test_create_team_prop_with_prop_type(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
+        """Test creating a team prop bet with prop_type"""
+        team_prop_data = {
+            "bet_type": "team_prop",
             "bet_placed_date": "2025-10-07T18:00:00",
             "game_date": "2025-10-07T20:00:00",
             "team": "LAL",
             "opponent": "GSW",
-            "prop_description": "LAL vs GSW Game Total Points",
+            "prop_type": "points",
             "prop_line": "225.5",
             "over_under": "over",
             "wager_amount": "75.00",
             "odds": -110,
-            "notes": "High scoring game expected",
+            "notes": "High scoring team expected",
         }
 
-        response = await client.post("/api/v1/bets", json=game_total_data)
+        response = await client.post("/api/v1/bets", json=team_prop_data)
 
         assert response.status_code == 200
         data = response.json()
 
-        assert data["bet_type"] == "game_total"
-        assert data["prop_description"] == "LAL vs GSW Game Total Points"
+        assert data["bet_type"] == "team_prop"
+        assert data["prop_type"] == "points"
         assert data["prop_line"] == "225.5"
         assert data["over_under"] == "over"
 
@@ -83,7 +85,7 @@ class TestUnifiedBetAPI:
             "game_date": "2025-10-07T20:00:00",
             "team": "MIL",
             "opponent": "CHI",
-            "prop_description": "Milwaukee Bucks -5.5",
+            "description": "MIL-spread",
             "prop_line": "5.5",
             "wager_amount": "100.00",
             "odds": -110,
@@ -95,7 +97,7 @@ class TestUnifiedBetAPI:
         data = response.json()
 
         assert data["bet_type"] == "spread"
-        assert data["prop_description"] == "Milwaukee Bucks -5.5"
+        assert data["description"] == "MIL-spread"
         assert data["over_under"] is None  # Spreads don't use over/under
 
     async def test_get_bets_empty(self, client: AsyncClient, db_session: AsyncSession):
@@ -124,12 +126,12 @@ class TestUnifiedBetAPI:
             result=BetResult.PENDING,
         )
         bet2 = Bet(
-            bet_type=BetType.GAME_TOTAL,
+            bet_type=BetType.TEAM_PROP,
             bet_placed_date=datetime(2025, 10, 7, 19, 0, 0),
             game_date=datetime(2025, 10, 8, 20, 0, 0),
             team="BOS",
             opponent="MIA",
-            prop_description="BOS vs MIA Game Total Points",
+            prop_type=PropType.POINTS,
             prop_line=Decimal("215.5"),
             over_under="under",
             wager_amount=Decimal("75.00"),
@@ -150,7 +152,7 @@ class TestUnifiedBetAPI:
         assert len(data) == 2
 
         # Should be ordered by created_at desc (most recent first)
-        assert data[0]["bet_type"] == "game_total"
+        assert data[0]["bet_type"] == "team_prop"
         assert data[1]["bet_type"] == "player_prop"
 
     async def test_get_bets_with_filters(self, client: AsyncClient, db_session: AsyncSession):
@@ -176,7 +178,8 @@ class TestUnifiedBetAPI:
             game_date=datetime(2025, 10, 8, 20, 0, 0),
             team="GSW",
             opponent="LAC",
-            prop_description="Golden State Warriors Total Points",
+            prop_type=PropType.POINTS,
+            description="GSW-points",
             prop_line=Decimal("118.5"),
             over_under="over",
             wager_amount=Decimal("75.00"),
@@ -338,7 +341,7 @@ class TestUnifiedBetAPI:
             "game_date": "2025-10-07T20:00:00",
             "team": "BOS",
             "opponent": "MIA",
-            "prop_description": "Boston Celtics ML",
+            "description": "BOS-moneyline",
             "prop_line": "1.0",
             "wager_amount": "50.00",
             "odds": 150,
@@ -350,7 +353,7 @@ class TestUnifiedBetAPI:
         data = response.json()
 
         assert data["bet_type"] == "moneyline"
-        assert data["prop_description"] == "Boston Celtics ML"
+        assert data["description"] == "BOS-moneyline"
         assert data["over_under"] is None  # Moneylines don't use over/under
 
     async def test_create_player_bet_with_auto_description(
@@ -376,7 +379,7 @@ class TestUnifiedBetAPI:
         assert response.status_code == 200
         data = response.json()
 
-        assert data["prop_description"] == "LeBron James Rebounds"
+        assert data["description"] == "LeBron James-rebounds"
 
     async def test_get_bets_with_all_filters(self, client: AsyncClient, db_session: AsyncSession):
         """Test getting bets with multiple filters applied"""
@@ -401,7 +404,7 @@ class TestUnifiedBetAPI:
             game_date=datetime(2025, 10, 8, 20, 0, 0),
             team="GSW",
             opponent="LAL",
-            prop_description="Golden State Warriors -3.5",
+            description="GSW-spread",
             prop_line=Decimal("3.5"),
             wager_amount=Decimal("100.00"),
             odds=-110,
@@ -452,7 +455,8 @@ class TestUnifiedBetAPI:
             game_date=datetime(2025, 10, 8, 20, 0, 0),
             team="BOS",
             opponent="MIA",
-            prop_description="Boston Celtics Total Points",
+            prop_type=PropType.POINTS,
+            description="BOS-points",
             prop_line=Decimal("112.5"),
             over_under="over",
             wager_amount=Decimal("75.00"),
@@ -513,7 +517,7 @@ class TestUnifiedBetAPI:
             "game_date": "2025-10-07T20:00:00",
             "team": "LAL",
             "opponent": "GSW",
-            "prop_description": "Lakers -5.5",
+            "description": "LAL-spread",
             "prop_line": "5.5",
             "wager_amount": "100.00",
             "odds": -110,
@@ -685,29 +689,30 @@ class TestAnalyticsAPI:
             game_date=datetime(2025, 10, 7, 20, 0, 0),
             team="BOS",
             opponent="MIA",
-            prop_description="Boston Celtics Total Points",
+            prop_type=PropType.POINTS,
+            description="BOS-points",
             prop_line=Decimal("112.5"),
             over_under="over",
             wager_amount=Decimal("50.00"),
             odds=-110,
             result=BetResult.WIN,
         )
-        game_total_loss = Bet(
-            bet_type=BetType.GAME_TOTAL,
+        spread_bet_loss = Bet(
+            bet_type=BetType.SPREAD,
             bet_placed_date=datetime(2025, 10, 8, 18, 0, 0),
             game_date=datetime(2025, 10, 8, 20, 0, 0),
             team="LAL",
             opponent="GSW",
-            prop_description="Game Total Points",
-            prop_line=Decimal("225.5"),
-            over_under="under",
+            description="LAL-spread",
+            prop_line=Decimal("7.5"),
+            over_under=None,  # Spreads don't use over/under
             wager_amount=Decimal("75.00"),
             odds=105,
             result=BetResult.LOSS,
         )
 
         db_session.add_all(
-            [player_bet_win, player_bet_loss, player_bet_pending, team_bet_win, game_total_loss]
+            [player_bet_win, player_bet_loss, player_bet_pending, team_bet_win, spread_bet_loss]
         )
         await db_session.commit()
 
@@ -718,7 +723,7 @@ class TestAnalyticsAPI:
 
         assert data["total_bets"] == 5
         assert data["total_wins"] == 2  # 1 player + 1 team
-        assert data["total_losses"] == 2  # 1 player + 1 game total
+        assert data["total_losses"] == 2  # 1 player + 1 spread
         assert data["win_rate"] == 50.0  # 2 wins out of 4 completed bets
 
         assert data["player_bets"]["total"] == 3
@@ -726,9 +731,9 @@ class TestAnalyticsAPI:
         assert data["player_bets"]["losses"] == 1
         assert data["player_bets"]["win_rate"] == 50.0
 
-        assert data["team_bets"]["total"] == 2
-        assert data["team_bets"]["wins"] == 1
-        assert data["team_bets"]["losses"] == 1
+        assert data["team_bets"]["total"] == 2  # 1 team prop + 1 spread
+        assert data["team_bets"]["wins"] == 1  # team prop win
+        assert data["team_bets"]["losses"] == 1  # spread loss
         assert data["team_bets"]["win_rate"] == 50.0
 
     async def test_get_bet_summary_with_comprehensive_data(
@@ -787,7 +792,8 @@ class TestAnalyticsAPI:
                 game_date=datetime(2025, 10, 4, 20, 0, 0),
                 team="MIL",
                 opponent="CHI",
-                prop_description="Milwaukee Bucks Total Points",
+                prop_type=PropType.POINTS,
+                description="MIL-points",
                 prop_line=Decimal("115.5"),
                 over_under="over",
                 wager_amount=Decimal("75.00"),
@@ -795,12 +801,13 @@ class TestAnalyticsAPI:
                 result=BetResult.WIN,
             ),
             Bet(
-                bet_type=BetType.GAME_TOTAL,
+                bet_type=BetType.TEAM_PROP,
                 bet_placed_date=datetime(2025, 10, 5, 18, 0, 0),
                 game_date=datetime(2025, 10, 5, 20, 0, 0),
                 team="PHI",
                 opponent="BRK",
-                prop_description="PHI vs BRK Game Total",
+                prop_type=PropType.POINTS,
+                description="PHI-points",
                 prop_line=Decimal("220.5"),
                 over_under="under",
                 wager_amount=Decimal("100.00"),
@@ -813,7 +820,7 @@ class TestAnalyticsAPI:
                 game_date=datetime(2025, 10, 6, 20, 0, 0),
                 team="DEN",
                 opponent="SAS",
-                prop_description="Denver Nuggets -7.5",
+                description="DEN-spread",
                 prop_line=Decimal("7.5"),
                 wager_amount=Decimal("50.00"),
                 odds=-110,
@@ -825,7 +832,7 @@ class TestAnalyticsAPI:
                 game_date=datetime(2025, 10, 7, 20, 0, 0),
                 team="CLE",
                 opponent="DET",
-                prop_description="Cleveland Cavaliers ML",
+                description="CLE-moneyline",
                 prop_line=Decimal("1.0"),
                 wager_amount=Decimal("40.00"),
                 odds=150,
@@ -854,10 +861,10 @@ class TestAnalyticsAPI:
         assert data["player_bets"]["losses"] == 1
         assert data["player_bets"]["win_rate"] == 50.0
 
-        # Non-player bet stats
+        # Non-player bet stats (2 team props + 1 spread + 1 moneyline = 4)
         assert data["team_bets"]["total"] == 4
-        assert data["team_bets"]["wins"] == 2
-        assert data["team_bets"]["losses"] == 1
+        assert data["team_bets"]["wins"] == 2  # MIL-points win, DEN-spread win
+        assert data["team_bets"]["losses"] == 1  # PHI-points loss
         assert data["team_bets"]["win_rate"] == 66.67
 
     async def test_all_database_operations_coverage(

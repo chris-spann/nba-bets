@@ -26,6 +26,7 @@ if (typeof globalThis.WeakRef === 'undefined') {
 if (typeof globalThis.FinalizationRegistry === 'undefined') {
   // @ts-expect-error - Polyfill for missing FinalizationRegistry
   globalThis.FinalizationRegistry = class FinalizationRegistry<T = unknown, K = unknown> {
+    // @ts-expect-error - Unused parameter required for interface compatibility
     private callback: (heldValue: T) => void
 
     constructor(callback: (heldValue: T) => void) {

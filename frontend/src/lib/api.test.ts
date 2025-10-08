@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi, Mock } from 'vitest'
-import { api, ApiClient, Bet, BetSummary, PlayerBet, TeamBet } from './api'
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
+import { api, ApiClient, type Bet, type BetSummary, type PlayerBet, type TeamBet } from './api'
 
 // Mock fetch globally
 const mockFetch = vi.fn() as Mock
@@ -365,7 +365,7 @@ describe('getBet', () => {
           game_date: '2024-01-16',
           team: 'Lakers',
           opponent: 'Warriors',
-          prop_description: 'Lakers -5.5',
+          description: 'Lakers -5.5',
           prop_line: '-5.5',
           wager_amount: '50',
           odds: -110,
@@ -427,7 +427,7 @@ describe('getBet', () => {
           game_date: '2024-01-16',
           team: 'Lakers',
           opponent: 'Warriors',
-          prop_description: 'Lakers -5.5',
+          description: 'Lakers -5.5',
           prop_line: '-5.5',
           wager_amount: '50',
           odds: -110,
@@ -448,7 +448,7 @@ describe('getBet', () => {
       })
       expect(result).toHaveLength(1)
       expect(result[0].player_name).toBeUndefined()
-      expect(result[0].prop_description).toBeDefined()
+      expect(result[0].description).toBeDefined()
     })
   })
 
@@ -575,7 +575,7 @@ it('should maintain the same instance across imports', async () => {
           game_date: '2024-01-16',
           team: 'Lakers',
           opponent: 'Warriors',
-          prop_description: 'Lakers -5.5',
+          description: 'Lakers -5.5',
           prop_line: '-5.5',
           wager_amount: '50',
           odds: -110,
@@ -592,8 +592,8 @@ it('should maintain the same instance across imports', async () => {
       const result = await apiClient.getTeamBets()
 
       result.forEach((bet: TeamBet) => {
-        expect(bet.prop_description).toBeDefined()
-        expect(typeof bet.prop_description).toBe('string')
+        expect(bet.description).toBeDefined()
+        expect(typeof bet.description).toBe('string')
         expect(bet.player_name).toBeUndefined()
       })
     })

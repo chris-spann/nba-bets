@@ -1,7 +1,9 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useMemo } from 'react'
-import { ChevronUp, ChevronDown } from 'lucide-react'
+import { ChevronUp, ChevronDown, Edit, Trash2, Plus } from 'lucide-react'
 import { api, type Bet } from '../lib/api'
+import { BetModal } from '../components/BetModal'
+import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal'
 
 type EnhancedBet = Bet & {
   prop_category: 'Player' | 'Team' | 'Game'
@@ -43,6 +45,8 @@ function getBetResultBadge(result: string) {
       return `${baseClasses} bg-gray-100 text-gray-800`
     case 'pending':
       return `${baseClasses} bg-blue-100 text-blue-800`
+    case 'cancelled':
+      return `${baseClasses} bg-yellow-100 text-yellow-800`
     default:
       return `${baseClasses} bg-gray-100 text-gray-800`
   }
@@ -70,7 +74,7 @@ function getDisplayDescription(bet: Bet): string {
     return `${bet.player_name} ${formatPropType(bet.prop_type)}`
   }
 
-  return bet.prop_description || 'Unknown Prop'
+  return bet.description || 'Unknown Prop'
 }
 
 function getDisplayLine(bet: Bet): string {
@@ -92,11 +96,56 @@ function getDisplayLine(bet: Bet): string {
 export function PropBets() {
   const [sortField, setSortField] = useState<SortField>('bet_placed_date')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingBet, setEditingBet] = useState<Bet | null>(null)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [betToDelete, setBetToDelete] = useState<Bet | null>(null)
+  const queryClient = useQueryClient()
 
   const { data: bets, isLoading, error } = useQuery({
     queryKey: ['bets'],
     queryFn: () => api.getBets(),
   })
+
+  const deleteBetMutation = useMutation({
+    mutationFn: (betId: number) => api.deleteBet(betId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bets'] })
+      queryClient.invalidateQueries({ queryKey: ['bet-summary'] })
+    },
+  })
+
+  const handleDeleteBet = (bet: Bet) => {
+    setBetToDelete(bet)
+    setDeleteConfirmOpen(true)
+  }
+
+  const confirmDeleteBet = () => {
+    if (betToDelete) {
+      deleteBetMutation.mutate(betToDelete.id)
+      setBetToDelete(null)
+    }
+  }
+
+  const cancelDeleteBet = () => {
+    setBetToDelete(null)
+    setDeleteConfirmOpen(false)
+  }
+
+  const handleEditBet = (bet: Bet) => {
+    setEditingBet(bet)
+    setIsModalOpen(true)
+  }
+
+  const handleAddBet = () => {
+    setEditingBet(null)
+    setIsModalOpen(true)
+  }
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false)
+    setEditingBet(null)
+  }
 
   const enhancedBets = useMemo(() => {
     return (bets || []).map(bet => ({
@@ -198,7 +247,7 @@ export function PropBets() {
   if (error) {
     return (
       <div className="text-center py-12">
-        <p className="text-sm text-red-600">Error loading prop bets: {(error as Error).message}</p>
+        <p className="text-sm text-red-600">Error loading bets: {(error as Error).message}</p>
         <button
           onClick={() => window.location.reload()}
           className="mt-2 text-sm text-primary-600 hover:text-primary-500"
@@ -210,25 +259,38 @@ export function PropBets() {
   }
 
   return (
-    <div>
-      <div className="sm:flex sm:items-center">
-        <div className="sm:flex-auto">
-          <h1 className="text-2xl font-semibold leading-6 text-gray-900">NBA Prop Bets</h1>
-          <p className="mt-2 text-sm text-gray-700">
-            Track all your NBA prop betting history ({sortedPropBets?.length || 0} bets)
-          </p>
+    <>
+      <div className={isModalOpen ? 'opacity-30 pointer-events-none' : ''}>
+        <div className="sm:flex sm:items-center">
+          <div className="sm:flex-auto">
+            <h1 className="text-2xl font-semibold leading-6 text-gray-900">History</h1>
+            <p className="mt-2 text-sm text-gray-700">
+              Track all your NBA betting history ({sortedPropBets?.length || 0} bets)
+            </p>
+          </div>
+          <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
+            <button
+              onClick={handleAddBet}
+              className="flex items-center justify-center rounded-full bg-primary-600 p-2 text-white shadow-sm hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
+              title="Add new bet"
+            >
+              <Plus className="h-5 w-5" aria-hidden="true" />
+            </button>
+          </div>
         </div>
-      </div>
 
       <div className="mt-8 bg-white shadow rounded-lg overflow-hidden">
         {!sortedPropBets || sortedPropBets.length === 0 ? (
           <div className="px-4 py-5 sm:p-6">
             <div className="text-center py-12">
-              <p className="text-sm text-gray-500">No prop bets found.</p>
+              <p className="text-sm text-gray-500">No bets found.</p>
               <p className="text-sm text-gray-500 mt-1">
-                <a href="/add-bet" className="text-primary-600 hover:text-primary-500">
-                  Add your first prop bet
-                </a>
+                <button
+                  onClick={handleAddBet}
+                  className="text-primary-600 hover:text-primary-500 font-medium"
+                >
+                  Add your first bet
+                </button>
               </p>
             </div>
           </div>
@@ -238,14 +300,19 @@ export function PropBets() {
               <thead className="bg-gray-50">
                 <tr>
                   <SortableHeader field="bet_placed_date">Bet Placed</SortableHeader>
-                  <SortableHeader field="prop_category">Type</SortableHeader>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Prop Details
+                    Type
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Details
                   </th>
                   <SortableHeader field="team">Game</SortableHeader>
                   <SortableHeader field="wager_amount">Wager</SortableHeader>
                   <SortableHeader field="result">Result</SortableHeader>
                   <SortableHeader field="payout">P&L</SortableHeader>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -261,13 +328,15 @@ export function PropBets() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          bet.prop_category === 'Player'
+                          bet.bet_type === 'player_prop'
                             ? 'bg-blue-100 text-blue-800'
-                            : bet.prop_category === 'Team'
+                            : bet.bet_type === 'team_prop'
                             ? 'bg-purple-100 text-purple-800'
+                            : bet.bet_type === 'spread'
+                            ? 'bg-green-100 text-green-800'
                             : 'bg-orange-100 text-orange-800'
                         }`}>
-                          {bet.prop_category}
+                          {bet.bet_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                         </div>
                       </td>
                       <td className="px-6 py-4">
@@ -331,6 +400,25 @@ export function PropBets() {
                           )}
                         </div>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleEditBet(bet)}
+                            className="text-primary-600 hover:text-primary-900 p-1 rounded hover:bg-primary-50"
+                            title="Edit bet"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteBet(bet)}
+                            disabled={deleteBetMutation.isPending}
+                            className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 disabled:opacity-50"
+                            title="Delete bet"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   )
                 })}
@@ -378,6 +466,23 @@ export function PropBets() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+
+      {/* Bet Modal */}
+      <BetModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        editBet={editingBet}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={deleteConfirmOpen}
+        onClose={cancelDeleteBet}
+        onConfirm={confirmDeleteBet}
+        title="Delete Bet"
+        message={betToDelete ? `Are you sure you want to delete this ${betToDelete.bet_type} bet? This will permanently remove the bet and all its data from your records.` : ''}
+      />
+    </>
   )
 }

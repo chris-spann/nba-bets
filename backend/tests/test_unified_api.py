@@ -36,7 +36,7 @@ class TestUnifiedBetAPI:
         assert response.status_code == 200
         data = response.json()
 
-        assert data["prop_description"] == "Boston Celtics Total Points"
+        assert data["description"] == "BOS-points"
         assert data["bet_type"] == "team_prop"
 
     async def test_get_bets_empty(self, client: AsyncClient, db_session: AsyncSession):
@@ -70,7 +70,8 @@ class TestUnifiedBetAPI:
             game_date=datetime(2025, 10, 8, 20, 0, 0),
             team="BOS",
             opponent="MIA",
-            prop_description="Boston Celtics Total Points",
+            prop_type=PropType.POINTS,
+            description="BOS-points",
             prop_line=Decimal("112.5"),
             over_under="over",
             wager_amount=Decimal("75.00"),
@@ -101,7 +102,7 @@ class TestUnifiedBetAPI:
             prop_type=PropType.POINTS,
             prop_line=Decimal("25.5"),
             over_under="over",
-            prop_description="LeBron James Points",
+            description="LeBron James-points",
             wager_amount=Decimal("50.00"),
             odds=-110,
             result=BetResult.PENDING,
@@ -127,7 +128,7 @@ class TestUnifiedBetAPI:
             prop_type=PropType.POINTS,
             prop_line=Decimal("25.5"),
             over_under="over",
-            prop_description="LeBron James Points",
+            description="LeBron James-points",
             wager_amount=Decimal("50.00"),
             odds=-110,
             result=BetResult.PENDING,
@@ -147,6 +148,76 @@ class TestUnifiedBetAPI:
         assert response.status_code == 200
         data = response.json()
         assert data["result"] == "win"
+
+    async def test_delete_bet(self, client: AsyncClient, db_session: AsyncSession):
+        """Test deleting a bet"""
+        bet = Bet(
+            bet_type=BetType.PLAYER_PROP,
+            bet_placed_date=datetime(2025, 10, 7, 18, 0, 0),
+            game_date=datetime(2025, 10, 7, 20, 0, 0),
+            team="LAL",
+            opponent="GSW",
+            player_name="LeBron James",
+            prop_type=PropType.POINTS,
+            prop_line=Decimal("25.5"),
+            over_under="over",
+            wager_amount=Decimal("50.00"),
+            odds=-110,
+            result=BetResult.PENDING,
+        )
+        db_session.add(bet)
+        await db_session.commit()
+        await db_session.refresh(bet)
+
+        bet_id = bet.id
+
+        # Delete the bet
+        response = await client.delete(f"/api/v1/bets/{bet_id}")
+        assert response.status_code == 200
+
+        # Verify bet is deleted
+        response = await client.get(f"/api/v1/bets/{bet_id}")
+        assert response.status_code == 404
+
+    async def test_delete_nonexistent_bet(self, client: AsyncClient, db_session: AsyncSession):
+        """Test deleting a bet that doesn't exist"""
+        response = await client.delete("/api/v1/bets/999999")
+        assert response.status_code == 404
+
+    async def test_get_nonexistent_bet(self, client: AsyncClient, db_session: AsyncSession):
+        """Test getting a bet that doesn't exist"""
+        response = await client.get("/api/v1/bets/999999")
+        assert response.status_code == 404
+
+    async def test_update_nonexistent_bet(self, client: AsyncClient, db_session: AsyncSession):
+        """Test updating a bet that doesn't exist"""
+        update_data = {
+            "result": "win",
+            "payout": "95.45",
+        }
+        response = await client.patch("/api/v1/bets/999999", json=update_data)
+        assert response.status_code == 404
+
+    async def test_create_moneyline_bet(self, client: AsyncClient, db_session: AsyncSession):
+        """Test creating a moneyline bet without prop_line"""
+        moneyline_data = {
+            "bet_type": "moneyline",
+            "bet_placed_date": "2025-10-07T18:00:00",
+            "game_date": "2025-10-07T20:00:00",
+            "team": "LAL",
+            "opponent": "GSW",
+            "wager_amount": 50.00,
+            "odds": -150,
+            "result": "pending",
+        }
+
+        response = await client.post("/api/v1/bets", json=moneyline_data)
+        assert response.status_code == 200
+        data = response.json()
+        assert data["bet_type"] == "moneyline"
+        assert data["prop_line"] is None
+        assert data["description"] == "LAL-moneyline"  # Moneyline should auto-generate team-bettype
+        assert data["over_under"] is None
 
 
 class TestAnalyticsAPI:
