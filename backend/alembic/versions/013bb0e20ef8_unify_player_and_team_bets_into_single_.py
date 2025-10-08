@@ -31,10 +31,9 @@ def upgrade() -> None:
     ).scalar()
 
     if not result:
-        bettype_enum = sa.Enum(
-            "PLAYER_PROP", "TEAM_PROP", "GAME_TOTAL", "SPREAD", "MONEYLINE", name="bettype"
+        op.execute(
+            "CREATE TYPE bettype AS ENUM ('PLAYER_PROP', 'TEAM_PROP', 'GAME_TOTAL', 'SPREAD', 'MONEYLINE')"
         )
-        bettype_enum.create(connection)
 
     # Check if betresult enum exists
     result = connection.execute(
@@ -42,8 +41,7 @@ def upgrade() -> None:
     ).scalar()
 
     if not result:
-        betresult_enum = sa.Enum("WIN", "LOSS", "PUSH", "PENDING", "CANCELLED", name="betresult")
-        betresult_enum.create(connection)
+        op.execute("CREATE TYPE betresult AS ENUM ('WIN', 'LOSS', 'PUSH', 'PENDING', 'CANCELLED')")
 
     # Check if proptype enum exists
     result = connection.execute(
@@ -51,36 +49,45 @@ def upgrade() -> None:
     ).scalar()
 
     if not result:
-        proptype_enum = sa.Enum(
-            "POINTS",
-            "REBOUNDS",
-            "ASSISTS",
-            "THREE_POINTERS",
-            "STEALS",
-            "BLOCKS",
-            "TURNOVERS",
-            "FIELD_GOALS_MADE",
-            "FREE_THROWS_MADE",
-            "DOUBLE_DOUBLE",
-            "TRIPLE_DOUBLE",
-            name="proptype",
+        op.execute(
+            "CREATE TYPE proptype AS ENUM ('POINTS', 'REBOUNDS', 'ASSISTS', 'THREE_POINTERS', 'STEALS', 'BLOCKS', 'TURNOVERS', 'FIELD_GOALS_MADE', 'FREE_THROWS_MADE', 'DOUBLE_DOUBLE', 'TRIPLE_DOUBLE')"
         )
-        proptype_enum.create(connection)
+
+    # Use existing enum types instead of creating new ones
+    bettype_enum = postgresql.ENUM(
+        "PLAYER_PROP",
+        "TEAM_PROP",
+        "GAME_TOTAL",
+        "SPREAD",
+        "MONEYLINE",
+        name="bettype",
+        create_type=False,
+    )
+    betresult_enum = postgresql.ENUM(
+        "WIN", "LOSS", "PUSH", "PENDING", "CANCELLED", name="betresult", create_type=False
+    )
+    proptype_enum = postgresql.ENUM(
+        "POINTS",
+        "REBOUNDS",
+        "ASSISTS",
+        "THREE_POINTERS",
+        "STEALS",
+        "BLOCKS",
+        "TURNOVERS",
+        "FIELD_GOALS_MADE",
+        "FREE_THROWS_MADE",
+        "DOUBLE_DOUBLE",
+        "TRIPLE_DOUBLE",
+        name="proptype",
+        create_type=False,
+    )
 
     op.create_table(
         "bets",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column(
             "bet_type",
-            sa.Enum(
-                "PLAYER_PROP",
-                "TEAM_PROP",
-                "GAME_TOTAL",
-                "SPREAD",
-                "MONEYLINE",
-                name="bettype",
-                create_type=False,
-            ),
+            bettype_enum,
             nullable=False,
         ),
         sa.Column("bet_placed_date", sa.DateTime(), nullable=False),
@@ -91,9 +98,7 @@ def upgrade() -> None:
         sa.Column("odds", sa.Integer(), nullable=False),
         sa.Column(
             "result",
-            sa.Enum(
-                "WIN", "LOSS", "PUSH", "PENDING", "CANCELLED", name="betresult", create_type=False
-            ),
+            betresult_enum,
             nullable=False,
         ),
         sa.Column("payout", sa.Numeric(scale=2), nullable=True),
@@ -103,21 +108,7 @@ def upgrade() -> None:
         sa.Column("player_name", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
         sa.Column(
             "prop_type",
-            sa.Enum(
-                "POINTS",
-                "REBOUNDS",
-                "ASSISTS",
-                "THREE_POINTERS",
-                "STEALS",
-                "BLOCKS",
-                "TURNOVERS",
-                "FIELD_GOALS_MADE",
-                "FREE_THROWS_MADE",
-                "DOUBLE_DOUBLE",
-                "TRIPLE_DOUBLE",
-                name="proptype",
-                create_type=False,
-            ),
+            proptype_enum,
             nullable=True,
         ),
         sa.Column("prop_line", sa.Numeric(scale=1), nullable=True),
