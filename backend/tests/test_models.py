@@ -68,7 +68,7 @@ class TestPlayerBet:
             wager_amount=Decimal("50.00"),
             odds=-110,
             result=BetResult.PENDING,
-            notes="Test bet"
+            notes="Test bet",
         )
 
         assert bet.bet_type == BetType.PLAYER_PROP
@@ -104,7 +104,7 @@ class TestPlayerBet:
             odds=-110,
             result=BetResult.WIN,
             actual_value=Decimal("28.0"),
-            payout=Decimal("95.45")
+            payout=Decimal("95.45"),
         )
 
         assert bet.result == BetResult.WIN
@@ -125,7 +125,7 @@ class TestPlayerBet:
             prop_line=Decimal("25.5"),
             over_under="over",
             wager_amount=Decimal("50.00"),
-            odds=-110
+            odds=-110,
         )
         assert bet_over.over_under == "over"
 
@@ -140,7 +140,7 @@ class TestPlayerBet:
             prop_line=Decimal("25.5"),
             over_under="under",
             wager_amount=Decimal("50.00"),
-            odds=-110
+            odds=-110,
         )
         assert bet_under.over_under == "under"
 
@@ -161,7 +161,7 @@ class TestTeamBet:
             over_under="over",
             wager_amount=Decimal("50.00"),
             odds=-110,
-            result=BetResult.PENDING
+            result=BetResult.PENDING,
         )
 
         assert bet.bet_type == BetType.TEAM_PROP
@@ -189,7 +189,7 @@ class TestTeamBet:
             over_under=None,  # Spread doesn't use over/under
             wager_amount=Decimal("100.00"),
             odds=-110,
-            result=BetResult.PENDING
+            result=BetResult.PENDING,
         )
 
         assert bet.bet_type == BetType.SPREAD
@@ -211,7 +211,7 @@ class TestTeamBet:
             odds=105,
             result=BetResult.LOSS,
             actual_value=Decimal("232.0"),
-            payout=Decimal("0.00")
+            payout=Decimal("0.00"),
         )
 
         assert bet.bet_type == BetType.GAME_TOTAL
@@ -237,7 +237,7 @@ class TestCreateModels:
             over_under="over",
             wager_amount=Decimal("50.00"),
             odds=-110,
-            notes="Test bet"
+            notes="Test bet",
         )
 
         assert bet_create.bet_type == BetType.PLAYER_PROP
@@ -257,7 +257,7 @@ class TestCreateModels:
             prop_line=Decimal("112.5"),
             over_under="over",
             wager_amount=Decimal("50.00"),
-            odds=-110
+            odds=-110,
         )
 
         assert bet_create.bet_type == BetType.TEAM_PROP
@@ -275,7 +275,7 @@ class TestCreateModels:
             prop_description="Milwaukee Bucks -5.5",
             prop_line=Decimal("5.5"),
             wager_amount=Decimal("100.00"),
-            odds=-110
+            odds=-110,
         )
 
         assert bet_create.over_under is None
@@ -290,7 +290,7 @@ class TestBetUpdate:
             result=BetResult.WIN,
             actual_value=Decimal("28.0"),
             payout=Decimal("95.45"),
-            notes="Updated bet result"
+            notes="Updated bet result",
         )
 
         assert bet_update.result == BetResult.WIN
@@ -300,10 +300,7 @@ class TestBetUpdate:
 
     def test_bet_update_partial_fields(self):
         """Test BetUpdate with only some fields"""
-        bet_update = BetUpdate(
-            result=BetResult.LOSS,
-            payout=Decimal("0.00")
-        )
+        bet_update = BetUpdate(result=BetResult.LOSS, payout=Decimal("0.00"))
 
         assert bet_update.result == BetResult.LOSS
         assert bet_update.actual_value is None

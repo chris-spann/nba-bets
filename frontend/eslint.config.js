@@ -21,18 +21,18 @@ export default defineConfig([
     },
     rules: {
       // TypeScript rules
-      '@typescript-eslint/no-unused-vars': ['error', { 
+      '@typescript-eslint/no-unused-vars': ['error', {
         argsIgnorePattern: '^_',
         varsIgnorePattern: '^_',
-        ignoreRestSiblings: true 
+        ignoreRestSiblings: true
       }],
       '@typescript-eslint/no-explicit-any': 'error',
-      
+
       // React rules
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
-      
+
       // General JavaScript rules
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       'no-debugger': 'error',
@@ -40,7 +40,7 @@ export default defineConfig([
       'no-unused-expressions': 'error',
       'prefer-const': 'error',
       'no-var': 'error',
-      
+
       // Code style
       'eqeqeq': ['error', 'always'],
       'curly': ['error', 'all'],

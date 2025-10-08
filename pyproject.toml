@@ -1,0 +1,21 @@
+[project]
+name = "nba-bets"
+version = "0.1.0"
+description = "NBA Bets Tracking Full-Stack Application"
+requires-python = ">=3.12"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# Commitizen configuration
+[tool.commitizen]
+name = "cz_conventional_commits"
+tag_format = "v$major.$minor.$patch$prerelease"
+version_type = "semver"
+version_provider = "commitizen"
+update_changelog_on_bump = true
+major_version_zero = true
+
+[tool.commitizen.settings]
+increment_types = ["feat", "fix"]
