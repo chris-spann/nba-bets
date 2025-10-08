@@ -64,7 +64,7 @@ test-backend: ## Run backend tests
 	cd backend && uv run pytest -v
 
 test-backend-coverage: ## Run backend tests with coverage
-	cd backend && uv run pytest -v --cov=app --cov-report=term-missing --cov-report=html
+	cd backend && uv run pytest -v --cov=app --cov-report=term-missing --cov-report=html --cov-report=xml
 
 test-frontend: ## Run frontend tests
 	cd frontend && npm run test

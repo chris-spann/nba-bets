@@ -40,13 +40,13 @@ repos:
         files: ^frontend/.*\.(ts|tsx|js|jsx)$
         pass_filenames: false
 
-      # Optional but useful checks (commented out for now)
-      # - id: check-yaml
-      #   name: Check YAML files
-      #   entry: make check-yaml
-      #   language: system
-      #   files: ^.*\.ya?ml$
-      #   pass_filenames: false
+      # YAML validation (essential for CI workflows)
+      - id: check-yaml
+        name: Check YAML files
+        entry: make check-yaml
+        language: system
+        files: ^.*\.ya?ml$
+        pass_filenames: false
       #
       # - id: check-json
       #   name: Check JSON files

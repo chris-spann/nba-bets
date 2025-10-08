@@ -129,17 +129,11 @@ make clean            # Remove containers and volumes
 
 ## 📊 API Endpoints
 
-### Player Bets
-- `GET /api/v1/bets/player` - List player bets
-- `POST /api/v1/bets/player` - Create player bet
-- `GET /api/v1/bets/player/{id}` - Get specific player bet
-- `PATCH /api/v1/bets/player/{id}` - Update player bet
-
-### Team Bets
-- `GET /api/v1/bets/team` - List team bets
-- `POST /api/v1/bets/team` - Create team bet
-- `GET /api/v1/bets/team/{id}` - Get specific team bet
-- `PATCH /api/v1/bets/team/{id}` - Update team bet
+### Unified Bet Management
+- `GET /api/v1/bets/` - List all bets (supports filtering by bet_type, team, player, etc.)
+- `POST /api/v1/bets/` - Create new bet (all types: player props, team props, spreads, totals, moneylines)
+- `GET /api/v1/bets/{id}` - Get specific bet
+- `PATCH /api/v1/bets/{id}` - Update bet
 
 ### Analytics
 - `GET /api/v1/bets/analytics/summary` - Betting performance summary
@@ -148,15 +142,12 @@ Full API documentation available at http://localhost:8000/docs when running.
 
 ## 🗄 Database Schema
 
-### PlayerBet
-- Player name, prop type (points, rebounds, etc.), line, over/under
-- Game details, odds, wager amount
-- Result tracking and payout calculation
-
-### TeamBet  
-- Team, opponent, prop description
-- Game details, odds, wager amount
-- Result tracking and payout calculation
+### Unified Bet Model
+- **Bet Type**: PLAYER_PROP, TEAM_PROP, GAME_TOTAL, SPREAD, MONEYLINE
+- **Common Fields**: Team, opponent, game date, odds, wager amount, result, payout
+- **Player Props**: Player name, prop type (points, rebounds, assists, etc.), line, over/under
+- **Team/Game Props**: Prop description, line, over/under (where applicable)
+- **Result Tracking**: WIN, LOSS, PUSH, PENDING, CANCELLED with actual values
 
 ## 🧪 Testing
 
