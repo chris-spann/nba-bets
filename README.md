@@ -20,26 +20,27 @@ A full-stack web application for tracking NBA prop bets, analyzing betting perfo
 ## 🛠 Tech Stack
 
 ### Backend
-- **FastAPI** - Modern, fast web framework for building APIs
-- **SQLModel** - Type-safe SQL database interactions
-- **PostgreSQL** - Robust relational database
-- **Alembic** - Database migration management
-- **Async SQLAlchemy** - High-performance database operations
-- **Python 3.13** - Latest Python features and performance
+- **FastAPI** - Modern, fast web framework for building APIs (≥0.118.0)
+- **SQLModel** - Type-safe SQL database interactions (≥0.0.25)
+- **PostgreSQL 16** - Robust relational database with async support
+- **Alembic** - Database migration management (≥1.16.5)
+- **Async SQLAlchemy** - High-performance database operations via asyncpg
+- **Python 3.13+** - Latest Python features and performance
 
 ### Frontend  
-- **React 18** - Modern UI framework with concurrent features
-- **TypeScript** - Type-safe JavaScript with verbatimModuleSyntax
-- **Vite 7** - Lightning-fast build tool with HMR
-- **Tailwind CSS v4** - Latest utility-first CSS framework with CSS-based config
-- **React Query** - Powerful data fetching and caching
-- **React Router v7** - Client-side routing
+- **React 19** - Latest UI framework with concurrent features and improved performance (^19.1.1)
+- **TypeScript 5.9** - Type-safe JavaScript with verbatimModuleSyntax (~5.9.3)
+- **Vite 7** - Lightning-fast build tool with HMR (^7.1.7)
+- **Tailwind CSS v4** - Latest utility-first CSS framework with CSS-based config (^4.1.14)
+- **TanStack Query v5** - Powerful data fetching and caching (^5.90.2)
+- **React Router v7** - Client-side routing (^7.9.3)
 
 ### Development & Deployment
 - **Docker** - Containerized development and deployment
 - **Docker Compose** - Multi-service orchestration with health checks
 - **uv** - Fast Python package management and virtual environments
-- **Node.js 20+** - Latest LTS with optimal Vite compatibility
+- **Node.js 20.19+** - Required for Vite 7 compatibility (use nvm to manage versions)
+- **Requirements files** - requirements.txt (production) + requirements-dev.txt (development)
 - **GitHub Actions** - CI/CD pipelines
 - **Astral Stack** - Modern Python tooling (uv + ruff + ty)
 
@@ -84,6 +85,9 @@ A full-stack web application for tracking NBA prop bets, analyzing betting perfo
 ```bash
 cd backend
 uv venv --python 3.13
+# Install production dependencies
+uv pip install -r requirements.txt
+# Or install with development dependencies
 uv pip install -r requirements-dev.txt
 uvicorn app.main:app --reload
 ```
@@ -130,13 +134,19 @@ make clean            # Remove containers and volumes
 ## 📊 API Endpoints
 
 ### Unified Bet Management
-- `GET /api/v1/bets/` - List all bets (supports filtering by bet_type, team, player, etc.)
+- `GET /api/v1/bets/` - List all bets with filtering support:
+  - `?bet_type=` - Filter by bet type (player_prop, team_prop, etc.)
+  - `?team=` - Filter by team name (partial match)
+  - `?player_name=` - Filter by player name (partial match)  
+  - `?prop_type=` - Filter by prop type (points, rebounds, etc.)
+  - `?result=` - Filter by bet result (win, loss, pending, etc.)
+  - `?skip=` & `?limit=` - Pagination support
 - `POST /api/v1/bets/` - Create new bet (all types: player props, team props, spreads, totals, moneylines)
 - `GET /api/v1/bets/{id}` - Get specific bet
-- `PATCH /api/v1/bets/{id}` - Update bet
+- `PATCH /api/v1/bets/{id}` - Update bet (typically for result and actual_value)
 
 ### Analytics
-- `GET /api/v1/bets/analytics/summary` - Betting performance summary
+- `GET /api/v1/bets/analytics/summary` - Betting performance summary with overall and per-type statistics
 
 Full API documentation available at http://localhost:8000/docs when running.
 
@@ -190,7 +200,7 @@ See `backend/.env.template` for all available options.
 ### Common Issues
 
 #### Port 5432 Already in Use
-If you get a "port 5432 already in use" error, you likely have PostgreSQL running locally:
+If you get a "port 5432 already in use" error, you likely have PostgreSQL running locally. The project uses port 5433 on the host to avoid conflicts:
 ```bash
 # Check what's using the port
 lsof -i :5432
@@ -201,6 +211,8 @@ brew services stop postgresql@14
 # or
 sudo launchctl unload /Library/LaunchDaemons/com.edb.launchd.postgresql-14.plist
 ```
+
+Note: The project PostgreSQL runs on host port 5433, but if you have a local PostgreSQL instance, it may still cause issues.
 
 #### Node.js Version Issues
 Vite 7 requires Node.js 20.19+. Use nvm to manage versions:
@@ -252,10 +264,13 @@ nba-bets/
 │   └── requirements*.txt   # Python dependencies
 ├── frontend/               # React frontend
 │   ├── src/
-│   │   ├── components/     # Reusable UI components
-│   │   ├── pages/          # Route components
-│   │   ├── hooks/          # Custom React hooks
-│   │   └── types/          # TypeScript types
+│   │   ├── components/     # Reusable UI components (Layout)
+│   │   ├── pages/          # Route components (Dashboard, PropBets, AddBet)
+│   │   ├── lib/            # API client and shared utilities
+│   │   └── setupTests.ts   # Test configuration
+│   ├── eslint.config.js    # ESLint configuration
+│   ├── postcss.config.js   # PostCSS configuration
+│   ├── vite.config.ts      # Vite configuration
 │   └── package.json        # Node.js dependencies
 ├── .github/workflows/      # CI/CD pipelines
 ├── docker-compose.yml      # Development orchestration

@@ -87,7 +87,7 @@ npm run test -- PropBets.test.tsx
 
 **Full-Stack Application**: Separated backend API and frontend SPA with shared database
 - **Backend**: FastAPI with async SQLAlchemy, PostgreSQL database
-- **Frontend**: React 18 with TypeScript, React Query for state management
+- **Frontend**: React 19 with TypeScript, TanStack Query for state management
 - **Database**: PostgreSQL with Alembic migrations
 - **Deployment**: Docker Compose for development, containerized services
 
@@ -120,7 +120,7 @@ npm run test -- PropBets.test.tsx
 ### Frontend Architecture (React + TypeScript)
 
 **State Management**:
-- **React Query**: Server state, caching, and data fetching
+- **TanStack Query**: Server state, caching, and data fetching
 - **React Router**: Client-side routing
 - **Local Component State**: UI state management
 
@@ -131,9 +131,9 @@ npm run test -- PropBets.test.tsx
 - `Layout`: Navigation and common UI structure
 
 **API Integration**:
-- Axios for HTTP requests to FastAPI backend
-- React Query for caching and data synchronization
-- TypeScript interfaces matching backend models
+- Native fetch API for HTTP requests to FastAPI backend (axios available as fallback)
+- TanStack Query for caching and data synchronization
+- TypeScript interfaces in lib/api.ts matching backend models
 
 ### Development Workflow
 
@@ -198,7 +198,7 @@ npm run test -- PropBets.test.tsx
 - Foreign keys and constraints enforce data integrity
 
 **Performance Optimizations**:
-- React Query caching reduces API calls
+- TanStack Query caching reduces API calls
 - Async backend operations for database
 - Docker volume mounts for development hot reloading
 - PostgreSQL indexes on commonly queried fields
