@@ -19,11 +19,35 @@ depends_on = None
 
 def upgrade():
     """Rename prop_description column to description"""
-    # Rename the column
-    op.alter_column("bets", "prop_description", new_column_name="description")
+    # Check if prop_description column exists before renaming
+    connection = op.get_bind()
+    result = connection.execute(
+        sa.text("""
+            SELECT EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_name = 'bets' AND column_name = 'prop_description'
+            )
+        """)
+    ).scalar()
+
+    # Only rename if prop_description exists
+    if result:
+        op.alter_column("bets", "prop_description", new_column_name="description")
 
 
 def downgrade():
     """Rename description column back to prop_description"""
-    # Rename the column back
-    op.alter_column("bets", "description", new_column_name="prop_description")
+    # Check if description column exists before renaming back
+    connection = op.get_bind()
+    result = connection.execute(
+        sa.text("""
+            SELECT EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_name = 'bets' AND column_name = 'description'
+            )
+        """)
+    ).scalar()
+
+    # Only rename if description exists
+    if result:
+        op.alter_column("bets", "description", new_column_name="prop_description")
