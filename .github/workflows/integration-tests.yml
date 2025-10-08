@@ -90,57 +90,7 @@ jobs:
 
     - name: Seed test data
       run: |
-        docker compose exec -T backend python -c "
-        import asyncio
-        from app.database.connection import get_db
-        from app.models.bet import PlayerBet, TeamBet, BetType, BetResult, PropType
-        from datetime import datetime, date
-        from decimal import Decimal
-
-        async def seed_data():
-            async for db in get_db():
-                # Create sample player bet
-                player_bet = PlayerBet(
-                    bet_type=BetType.PLAYER_PROP,
-                    game_date=date(2024, 1, 15),
-                    team='Lakers',
-                    opponent='Warriors',
-                    wager_amount=Decimal('100.00'),
-                    odds=-110,
-                    result=BetResult.WIN,
-                    payout=Decimal('190.91'),
-                    player_name='LeBron James',
-                    prop_type=PropType.POINTS,
-                    prop_line=Decimal('25.5'),
-                    over_under='Over',
-                    actual_value=Decimal('28.0'),
-                    created_at=datetime.now()
-                )
-                db.add(player_bet)
-
-                # Create sample team bet
-                team_bet = TeamBet(
-                    bet_type=BetType.TEAM_PROP,
-                    game_date=date(2024, 1, 15),
-                    team='Lakers',
-                    opponent='Warriors',
-                    wager_amount=Decimal('50.00'),
-                    odds=120,
-                    result=BetResult.LOSS,
-                    prop_description='Team Total Points Over',
-                    prop_line=Decimal('115.5'),
-                    over_under='Over',
-                    actual_value=Decimal('112.0'),
-                    created_at=datetime.now()
-                )
-                db.add(team_bet)
-
-                await db.commit()
-                print('Test data seeded successfully!')
-                break
-
-        asyncio.run(seed_data())
-        "
+        docker compose exec -T backend python scripts/seed_data.py
 
     - name: Run API integration tests
       run: |
@@ -150,31 +100,47 @@ jobs:
         # Test health endpoint
         curl -f http://localhost:8000/docs
 
-        # Test player bets endpoint
-        RESPONSE=$(curl -s http://localhost:8000/api/v1/bets/player)
-        echo "Player bets response: $RESPONSE"
-
-        # Test team bets endpoint
-        RESPONSE=$(curl -s http://localhost:8000/api/v1/bets/team)
-        echo "Team bets response: $RESPONSE"
+        # Test unified bets endpoint
+        RESPONSE=$(curl -s http://localhost:8000/api/v1/bets/)
+        echo "Unified bets response: $RESPONSE"
 
         # Test analytics endpoint
         RESPONSE=$(curl -s http://localhost:8000/api/v1/bets/analytics/summary)
         echo "Analytics response: $RESPONSE"
 
-        # Create new bet via API
-        curl -X POST http://localhost:8000/api/v1/bets/player \\\n          -H "Content-Type: application/json" \\\n          -d '{
+        # Create new player bet via unified API
+        curl -X POST http://localhost:8000/api/v1/bets/ \\
+          -H "Content-Type: application/json" \\
+          -d '{
             "bet_type": "PLAYER_PROP",
-            "game_date": "2024-01-16",
-            "team": "Celtics",
-            "opponent": "Heat",
+            "bet_placed_date": "2024-01-16T10:00:00",
+            "game_date": "2024-01-16T19:00:00",
+            "team": "BOS",
+            "opponent": "MIA",
             "wager_amount": 75.00,
             "odds": -120,
             "result": "PENDING",
             "player_name": "Jayson Tatum",
             "prop_type": "POINTS",
             "prop_line": 27.5,
-            "over_under": "Over"
+            "over_under": "over"
+          }'
+
+        # Create new team bet via unified API
+        curl -X POST http://localhost:8000/api/v1/bets/ \\
+          -H "Content-Type: application/json" \\
+          -d '{
+            "bet_type": "TEAM_PROP",
+            "bet_placed_date": "2024-01-16T10:00:00",
+            "game_date": "2024-01-16T19:00:00",
+            "team": "LAL",
+            "opponent": "GSW",
+            "wager_amount": 50.00,
+            "odds": 110,
+            "result": "PENDING",
+            "prop_description": "Lakers Total Points",
+            "prop_line": 115.5,
+            "over_under": "over"
           }'
 
     - name: Run frontend integration tests
@@ -201,7 +167,7 @@ jobs:
         fi
 
         # Verify API is accessible from frontend context
-        API_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/api/v1/bets/player)
+        API_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/api/v1/bets/)
         if [ "$API_STATUS" != "200" ]; then
           echo "API not accessible, status: $API_STATUS"
           exit 1
