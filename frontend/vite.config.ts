@@ -4,4 +4,30 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/setupTests.ts',
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      exclude: [
+        'node_modules/',
+        'src/setupTests.ts',
+        'src/main.tsx',
+        'src/App.tsx',
+        '**/*.config.*',
+        '**/*.d.ts',
+        'coverage/**',
+        'dist/**',
+        '.vscode/**',
+        'public/**',
+        '*.config.*',
+        'vite.config.ts',
+        'postcss.config.js',
+        'tailwind.config.js',
+        'eslint.config.js',
+      ],
+    },
+  },
 })

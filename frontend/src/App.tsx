@@ -2,8 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { Dashboard } from './pages/Dashboard'
-import { PlayerBets } from './pages/PlayerBets'
-import { TeamBets } from './pages/TeamBets'
+import { PropBets } from './pages/PropBets'
 import { AddBet } from './pages/AddBet'
 import './App.css'
 
@@ -23,9 +22,11 @@ function App() {
         <Layout>
           <Routes>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/player-bets" element={<PlayerBets />} />
-            <Route path="/team-bets" element={<TeamBets />} />
+            <Route path="/prop-bets" element={<PropBets />} />
             <Route path="/add-bet" element={<AddBet />} />
+            {/* Legacy redirects */}
+            <Route path="/player-bets" element={<PropBets />} />
+            <Route path="/team-bets" element={<PropBets />} />
           </Routes>
         </Layout>
       </Router>

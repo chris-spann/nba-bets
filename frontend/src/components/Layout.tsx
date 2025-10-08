@@ -1,6 +1,6 @@
 import { type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { BarChart3, Target, Users, Plus } from 'lucide-react'
+import { BarChart3, Target, Plus } from 'lucide-react'
 import { clsx } from 'clsx'
 
 interface LayoutProps {
@@ -9,8 +9,7 @@ interface LayoutProps {
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: BarChart3 },
-  { name: 'Player Bets', href: '/player-bets', icon: Target },
-  { name: 'Team Bets', href: '/team-bets', icon: Users },
+  { name: 'Prop Bets', href: '/prop-bets', icon: Target },
   { name: 'Add Bet', href: '/add-bet', icon: Plus },
 ]
 
@@ -30,7 +29,7 @@ export function Layout({ children }: LayoutProps) {
                 {navigation.map((item) => {
                   const Icon = item.icon
                   const isActive = location.pathname === item.href
-                  
+
                   return (
                     <Link
                       key={item.name}
@@ -39,7 +38,7 @@ export function Layout({ children }: LayoutProps) {
                         isActive
                           ? 'border-primary-500 text-gray-900'
                           : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700',
-                        'inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium'
+                        'inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium',
                       )}
                     >
                       <Icon className="w-4 h-4 mr-2" />

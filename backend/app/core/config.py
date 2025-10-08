@@ -1,4 +1,4 @@
-from pydantic import Field
+from pydantic import ConfigDict, Field
 from pydantic_settings import BaseSettings
 
 
@@ -29,8 +29,7 @@ class Settings(BaseSettings):
             f"@{self.postgres_server}:{self.postgres_port}/{self.postgres_db}"
         )
 
-    class Config:
-        env_file = ".env"
+    model_config = ConfigDict(env_file=".env")
 
 
 settings = Settings()

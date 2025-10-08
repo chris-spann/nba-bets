@@ -11,14 +11,18 @@
   ],
   "pythonVersion": "3.13",
   "pythonPlatform": "Darwin",
+  "venvPath": ".",
+  "venv": ".venv",
   "executionEnvironments": [
     {
       "root": ".",
       "pythonVersion": "3.13",
       "pythonPlatform": "Darwin",
+      "venv": ".venv",
       "extraPaths": [
         ".",
-        "./app"
+        "./app",
+        "./alembic"
       ]
     }
   ],

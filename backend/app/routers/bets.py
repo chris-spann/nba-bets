@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -5,141 +7,89 @@ from sqlmodel import func
 
 from app.database.connection import get_db_session
 from app.models.bet import (
+    Bet,
+    BetCreate,
     BetResult,
+    BetType,
     BetUpdate,
-    PlayerBet,
-    PlayerBetCreate,
     PropType,
-    TeamBet,
-    TeamBetCreate,
 )
 
 router = APIRouter(prefix="/bets", tags=["bets"])
 
 
-# Player Bet Endpoints
-@router.post("/player", response_model=PlayerBet)
-async def create_player_bet(bet: PlayerBetCreate, db: AsyncSession = Depends(get_db_session)):
-    """Create a new player prop bet"""
-    db_bet = PlayerBet(**bet.model_dump())
+# Unified Bet Endpoints
+@router.post("", response_model=Bet)
+async def create_bet(bet: BetCreate, db: AsyncSession = Depends(get_db_session)):
+    """Create a new bet (player prop, team prop, or any other bet type)"""
+    # Auto-generate prop_description for player props if not provided
+    bet_data = bet.model_dump()
+    if bet.bet_type == BetType.PLAYER_PROP and not bet.prop_description and bet.prop_type:
+        bet_data["prop_description"] = f"{bet.player_name} {bet.prop_type.value.replace('_', ' ').title()}"
+
+    db_bet = Bet(**bet_data)
     db.add(db_bet)
     await db.commit()
     await db.refresh(db_bet)
     return db_bet
 
 
-@router.get("/player", response_model=list[PlayerBet])
-async def get_player_bets(
+@router.get("", response_model=list[Bet])
+async def get_bets(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
+    bet_type: BetType = Query(None, description="Filter by bet type"),
+    team: str = Query(None, description="Filter by team"),
     player_name: str = Query(None, description="Filter by player name"),
     prop_type: PropType = Query(None, description="Filter by prop type"),
     result: BetResult = Query(None, description="Filter by bet result"),
     db: AsyncSession = Depends(get_db_session),
 ):
-    """Get player prop bets with optional filters"""
-    query = select(PlayerBet).order_by(desc(PlayerBet.created_at))
+    """Get all bets with optional filters"""
+    query = select(Bet).order_by(desc(Bet.bet_placed_date))
 
     # Apply filters
-    if player_name:
-        query = query.where(PlayerBet.player_name.ilike(f"%{player_name}%"))
-    if prop_type:
-        query = query.where(PlayerBet.prop_type == prop_type)
-    if result:
-        query = query.where(PlayerBet.result == result)
-
-    query = query.offset(skip).limit(limit)
-    result = await db.execute(query)
-    return result.scalars().all()
-
-
-@router.get("/player/{bet_id}", response_model=PlayerBet)
-async def get_player_bet(bet_id: int, db: AsyncSession = Depends(get_db_session)):
-    """Get a specific player bet by ID"""
-    result = await db.execute(select(PlayerBet).where(PlayerBet.id == bet_id))
-    bet = result.scalar_one_or_none()
-    if not bet:
-        raise HTTPException(status_code=404, detail="Player bet not found")
-    return bet
-
-
-@router.patch("/player/{bet_id}", response_model=PlayerBet)
-async def update_player_bet(
-    bet_id: int, bet_update: BetUpdate, db: AsyncSession = Depends(get_db_session)
-):
-    """Update a player bet (typically to set result and actual value)"""
-    result = await db.execute(select(PlayerBet).where(PlayerBet.id == bet_id))
-    bet = result.scalar_one_or_none()
-    if not bet:
-        raise HTTPException(status_code=404, detail="Player bet not found")
-
-    # Update fields that are not None
-    update_data = bet_update.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(bet, field, value)
-
-    await db.commit()
-    await db.refresh(bet)
-    return bet
-
-
-# Team Bet Endpoints
-@router.post("/team", response_model=TeamBet)
-async def create_team_bet(bet: TeamBetCreate, db: AsyncSession = Depends(get_db_session)):
-    """Create a new team prop bet"""
-    db_bet = TeamBet(**bet.model_dump())
-    db.add(db_bet)
-    await db.commit()
-    await db.refresh(db_bet)
-    return db_bet
-
-
-@router.get("/team", response_model=list[TeamBet])
-async def get_team_bets(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=1000),
-    team: str = Query(None, description="Filter by team"),
-    result: BetResult = Query(None, description="Filter by bet result"),
-    db: AsyncSession = Depends(get_db_session),
-):
-    """Get team prop bets with optional filters"""
-    query = select(TeamBet).order_by(desc(TeamBet.created_at))
-
-    # Apply filters
+    if bet_type:
+        query = query.where(Bet.bet_type == bet_type)
     if team:
-        query = query.where(TeamBet.team.ilike(f"%{team}%"))
+        query = query.where(Bet.team.ilike(f"%{team}%"))
+    if player_name:
+        query = query.where(Bet.player_name.ilike(f"%{player_name}%"))
+    if prop_type:
+        query = query.where(Bet.prop_type == prop_type)
     if result:
-        query = query.where(TeamBet.result == result)
+        query = query.where(Bet.result == result)
 
     query = query.offset(skip).limit(limit)
     result = await db.execute(query)
     return result.scalars().all()
 
 
-@router.get("/team/{bet_id}", response_model=TeamBet)
-async def get_team_bet(bet_id: int, db: AsyncSession = Depends(get_db_session)):
-    """Get a specific team bet by ID"""
-    result = await db.execute(select(TeamBet).where(TeamBet.id == bet_id))
-    bet = result.scalar_one_or_none()
+@router.get("/{bet_id}", response_model=Bet)
+async def get_bet(bet_id: int, db: AsyncSession = Depends(get_db_session)):
+    """Get a specific bet by ID"""
+    bet = await db.get(Bet, bet_id)
     if not bet:
-        raise HTTPException(status_code=404, detail="Team bet not found")
+        raise HTTPException(status_code=404, detail="Bet not found")
     return bet
 
 
-@router.patch("/team/{bet_id}", response_model=TeamBet)
-async def update_team_bet(
+@router.patch("/{bet_id}", response_model=Bet)
+async def update_bet(
     bet_id: int, bet_update: BetUpdate, db: AsyncSession = Depends(get_db_session)
 ):
-    """Update a team bet (typically to set result and actual value)"""
-    result = await db.execute(select(TeamBet).where(TeamBet.id == bet_id))
-    bet = result.scalar_one_or_none()
+    """Update a bet (typically to set result and actual value)"""
+    bet = await db.get(Bet, bet_id)
     if not bet:
-        raise HTTPException(status_code=404, detail="Team bet not found")
+        raise HTTPException(status_code=404, detail="Bet not found")
 
     # Update fields that are not None
     update_data = bet_update.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(bet, field, value)
+
+    # Always set updated_at when updating
+    bet.updated_at = datetime.now(UTC).replace(tzinfo=None)
 
     await db.commit()
     await db.refresh(bet)
@@ -151,37 +101,59 @@ async def update_team_bet(
 async def get_bet_summary(db: AsyncSession = Depends(get_db_session)):
     """Get betting performance summary"""
 
+    # Overall bet stats
+    total_bets_result = await db.execute(select(func.count(Bet.id)))
+    total_wins_result = await db.execute(
+        select(func.count(Bet.id)).where(Bet.result == BetResult.WIN)
+    )
+    total_losses_result = await db.execute(
+        select(func.count(Bet.id)).where(Bet.result == BetResult.LOSS)
+    )
+
     # Player bet stats
-    player_total = await db.execute(select(func.count(PlayerBet.id)))
-    player_wins = await db.execute(
-        select(func.count(PlayerBet.id)).where(PlayerBet.result == BetResult.WIN)
+    player_total_result = await db.execute(
+        select(func.count(Bet.id)).where(Bet.bet_type == BetType.PLAYER_PROP)
     )
-    player_losses = await db.execute(
-        select(func.count(PlayerBet.id)).where(PlayerBet.result == BetResult.LOSS)
+    player_wins_result = await db.execute(
+        select(func.count(Bet.id)).where(
+            (Bet.bet_type == BetType.PLAYER_PROP) & (Bet.result == BetResult.WIN)
+        )
     )
-
-    # Team bet stats
-    team_total = await db.execute(select(func.count(TeamBet.id)))
-    team_wins = await db.execute(
-        select(func.count(TeamBet.id)).where(TeamBet.result == BetResult.WIN)
-    )
-    team_losses = await db.execute(
-        select(func.count(TeamBet.id)).where(TeamBet.result == BetResult.LOSS)
+    player_losses_result = await db.execute(
+        select(func.count(Bet.id)).where(
+            (Bet.bet_type == BetType.PLAYER_PROP) & (Bet.result == BetResult.LOSS)
+        )
     )
 
-    player_total_count = player_total.scalar() or 0
-    team_total_count = team_total.scalar() or 0
-    total_bets = player_total_count + team_total_count
+    # Team/other bet stats (everything that's not a player prop)
+    team_total_result = await db.execute(
+        select(func.count(Bet.id)).where(Bet.bet_type != BetType.PLAYER_PROP)
+    )
+    team_wins_result = await db.execute(
+        select(func.count(Bet.id)).where(
+            (Bet.bet_type != BetType.PLAYER_PROP) & (Bet.result == BetResult.WIN)
+        )
+    )
+    team_losses_result = await db.execute(
+        select(func.count(Bet.id)).where(
+            (Bet.bet_type != BetType.PLAYER_PROP) & (Bet.result == BetResult.LOSS)
+        )
+    )
 
-    player_win_count = player_wins.scalar() or 0
-    team_win_count = team_wins.scalar() or 0
-    total_wins = player_win_count + team_win_count
+    total_bets = total_bets_result.scalar() or 0
+    total_wins = total_wins_result.scalar() or 0
+    total_losses = total_losses_result.scalar() or 0
 
-    player_loss_count = player_losses.scalar() or 0
-    team_loss_count = team_losses.scalar() or 0
-    total_losses = player_loss_count + team_loss_count
+    player_total_count = player_total_result.scalar() or 0
+    player_win_count = player_wins_result.scalar() or 0
+    player_loss_count = player_losses_result.scalar() or 0
 
-    win_rate = (total_wins / total_bets * 100) if total_bets > 0 else 0
+    team_total_count = team_total_result.scalar() or 0
+    team_win_count = team_wins_result.scalar() or 0
+    team_loss_count = team_losses_result.scalar() or 0
+
+    completed_bets = total_wins + total_losses
+    win_rate = (total_wins / completed_bets * 100) if completed_bets > 0 else 0
 
     return {
         "total_bets": total_bets,
@@ -193,7 +165,7 @@ async def get_bet_summary(db: AsyncSession = Depends(get_db_session)):
             "wins": player_win_count,
             "losses": player_loss_count,
             "win_rate": round(
-                (player_win_count / player_total_count * 100) if player_total_count > 0 else 0, 2
+                (player_win_count / (player_win_count + player_loss_count) * 100) if (player_win_count + player_loss_count) > 0 else 0, 2
             ),
         },
         "team_bets": {
@@ -201,7 +173,7 @@ async def get_bet_summary(db: AsyncSession = Depends(get_db_session)):
             "wins": team_win_count,
             "losses": team_loss_count,
             "win_rate": round(
-                (team_win_count / team_total_count * 100) if team_total_count > 0 else 0, 2
+                (team_win_count / (team_win_count + team_loss_count) * 100) if (team_win_count + team_loss_count) > 0 else 0, 2
             ),
         },
     }

@@ -56,15 +56,21 @@ seed: ## Seed database with sample data
 	docker compose exec backend python -m scripts.seed_data
 
 # Testing Commands
-test: ## Run all tests
-	$(MAKE) test-backend
-	$(MAKE) test-frontend
+test: ## Run all tests with coverage
+	$(MAKE) test-backend-coverage
+	$(MAKE) test-frontend-coverage
 
 test-backend: ## Run backend tests
-	cd backend && ./.venv/bin/pytest -v
+	cd backend && uv run pytest -v
+
+test-backend-coverage: ## Run backend tests with coverage
+	cd backend && uv run pytest -v --cov=app --cov-report=term-missing --cov-report=html
 
 test-frontend: ## Run frontend tests
-	cd frontend && npm run test -- --run
+	cd frontend && npm run test
+
+test-frontend-coverage: ## Run frontend tests with coverage
+	cd frontend && npm run test:coverage
 
 test-watch: ## Run backend tests in watch mode
 	cd backend && uv run pytest --watch
@@ -76,13 +82,13 @@ lint: ## Lint all code
 	$(MAKE) lint-frontend
 
 lint-backend: ## Lint backend code
-	cd backend && ./.venv/bin/ruff check .
+	cd backend && uv run ruff check .
 
 type-check: ## Run type checking with ty
-	cd backend && ./.venv/bin/ty check
+	cd backend && uv run ty check
 
 type-check-watch: ## Run type checking in watch mode
-	cd backend && ./.venv/bin/ty check --watch
+	cd backend && uv run ty check --watch
 
 lint-frontend: ## Lint frontend code
 	cd frontend && npm run lint
@@ -92,7 +98,7 @@ format: ## Format all code
 	$(MAKE) format-frontend
 
 format-backend: ## Format backend code
-	cd backend && ./.venv/bin/ruff check --fix . && ./.venv/bin/ruff format .
+	cd backend && uv run ruff check --fix . && uv run ruff format .
 
 format-frontend: ## Format frontend code
 	cd frontend && npm run format
