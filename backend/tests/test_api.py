@@ -10,7 +10,9 @@ from app.models.bet import Bet, BetResult, BetType, PropType
 class TestUnifiedBetAPI:
     """Test unified bet API endpoints"""
 
-    async def test_create_player_bet(self, client: AsyncClient, db_session: AsyncSession, sample_player_bet_data):
+    async def test_create_player_bet(
+        self, client: AsyncClient, db_session: AsyncSession, sample_player_bet_data
+    ):
         """Test creating a player bet"""
         response = await client.post("/api/v1/bets", json=sample_player_bet_data)
 
@@ -28,7 +30,9 @@ class TestUnifiedBetAPI:
         assert data["game_date"] is not None
         assert data["id"] is not None
 
-    async def test_create_team_bet(self, client: AsyncClient, db_session: AsyncSession, sample_team_bet_data):
+    async def test_create_team_bet(
+        self, client: AsyncClient, db_session: AsyncSession, sample_team_bet_data
+    ):
         """Test creating a team bet"""
         response = await client.post("/api/v1/bets", json=sample_team_bet_data)
 
@@ -58,7 +62,7 @@ class TestUnifiedBetAPI:
             "over_under": "over",
             "wager_amount": "75.00",
             "odds": -110,
-            "notes": "High scoring game expected"
+            "notes": "High scoring game expected",
         }
 
         response = await client.post("/api/v1/bets", json=game_total_data)
@@ -82,7 +86,7 @@ class TestUnifiedBetAPI:
             "prop_description": "Milwaukee Bucks -5.5",
             "prop_line": "5.5",
             "wager_amount": "100.00",
-            "odds": -110
+            "odds": -110,
         }
 
         response = await client.post("/api/v1/bets", json=spread_data)
@@ -117,7 +121,7 @@ class TestUnifiedBetAPI:
             over_under="over",
             wager_amount=Decimal("50.00"),
             odds=-110,
-            result=BetResult.PENDING
+            result=BetResult.PENDING,
         )
         bet2 = Bet(
             bet_type=BetType.GAME_TOTAL,
@@ -132,7 +136,7 @@ class TestUnifiedBetAPI:
             odds=110,
             result=BetResult.WIN,
             actual_value=Decimal("210.0"),
-            payout=Decimal("157.50")
+            payout=Decimal("157.50"),
         )
 
         db_session.add(bet1)
@@ -164,7 +168,7 @@ class TestUnifiedBetAPI:
             over_under="over",
             wager_amount=Decimal("50.00"),
             odds=-110,
-            result=BetResult.WIN
+            result=BetResult.WIN,
         )
         bet2 = Bet(
             bet_type=BetType.TEAM_PROP,
@@ -177,7 +181,7 @@ class TestUnifiedBetAPI:
             over_under="over",
             wager_amount=Decimal("75.00"),
             odds=120,
-            result=BetResult.LOSS
+            result=BetResult.LOSS,
         )
 
         db_session.add(bet1)
@@ -228,7 +232,7 @@ class TestUnifiedBetAPI:
                 over_under="over",
                 wager_amount=Decimal("50.00"),
                 odds=-110,
-                result=BetResult.PENDING
+                result=BetResult.PENDING,
             )
             db_session.add(bet)
 
@@ -260,7 +264,7 @@ class TestUnifiedBetAPI:
             over_under="over",
             wager_amount=Decimal("50.00"),
             odds=-110,
-            result=BetResult.PENDING
+            result=BetResult.PENDING,
         )
         db_session.add(bet)
         await db_session.commit()
@@ -295,7 +299,7 @@ class TestUnifiedBetAPI:
             over_under="over",
             wager_amount=Decimal("50.00"),
             odds=-110,
-            result=BetResult.PENDING
+            result=BetResult.PENDING,
         )
         db_session.add(bet)
         await db_session.commit()
@@ -305,7 +309,7 @@ class TestUnifiedBetAPI:
             "result": "win",
             "actual_value": "28.0",
             "payout": "95.45",
-            "notes": "Updated bet result"
+            "notes": "Updated bet result",
         }
 
         response = await client.patch(f"/api/v1/bets/{bet.id}", json=update_data)
@@ -337,7 +341,7 @@ class TestUnifiedBetAPI:
             "prop_description": "Boston Celtics ML",
             "prop_line": "1.0",
             "wager_amount": "50.00",
-            "odds": 150
+            "odds": 150,
         }
 
         response = await client.post("/api/v1/bets", json=moneyline_data)
@@ -349,7 +353,9 @@ class TestUnifiedBetAPI:
         assert data["prop_description"] == "Boston Celtics ML"
         assert data["over_under"] is None  # Moneylines don't use over/under
 
-    async def test_create_player_bet_with_auto_description(self, client: AsyncClient, db_session: AsyncSession):
+    async def test_create_player_bet_with_auto_description(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
         """Test creating a player bet with auto-generated prop description"""
         player_data = {
             "bet_type": "player_prop",
@@ -362,7 +368,7 @@ class TestUnifiedBetAPI:
             "prop_line": "8.5",
             "over_under": "over",
             "wager_amount": "25.00",
-            "odds": -110
+            "odds": -110,
         }
 
         response = await client.post("/api/v1/bets", json=player_data)
@@ -387,7 +393,7 @@ class TestUnifiedBetAPI:
             over_under="over",
             wager_amount=Decimal("50.00"),
             odds=-110,
-            result=BetResult.WIN
+            result=BetResult.WIN,
         )
         bet2 = Bet(
             bet_type=BetType.SPREAD,
@@ -399,7 +405,7 @@ class TestUnifiedBetAPI:
             prop_line=Decimal("3.5"),
             wager_amount=Decimal("100.00"),
             odds=-110,
-            result=BetResult.LOSS
+            result=BetResult.LOSS,
         )
 
         db_session.add(bet1)
@@ -413,14 +419,18 @@ class TestUnifiedBetAPI:
         assert len(data) == 1
         assert data[0]["prop_type"] == "points"
 
-    async def test_get_bets_with_invalid_query_params(self, client: AsyncClient, db_session: AsyncSession):
+    async def test_get_bets_with_invalid_query_params(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
         """Test that invalid query parameters don't break the API"""
         response = await client.get("/api/v1/bets?invalid_param=test")
         assert response.status_code == 200
         data = response.json()
         assert data == []
 
-    async def test_get_bets_ordering_by_bet_placed_date(self, client: AsyncClient, db_session: AsyncSession):
+    async def test_get_bets_ordering_by_bet_placed_date(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
         """Test that bets are ordered by bet_placed_date descending"""
         # Create bets with different placed dates
         bet1 = Bet(
@@ -434,7 +444,7 @@ class TestUnifiedBetAPI:
             prop_line=Decimal("25.5"),
             over_under="over",
             wager_amount=Decimal("50.00"),
-            odds=-110
+            odds=-110,
         )
         bet2 = Bet(
             bet_type=BetType.TEAM_PROP,
@@ -446,7 +456,7 @@ class TestUnifiedBetAPI:
             prop_line=Decimal("112.5"),
             over_under="over",
             wager_amount=Decimal("75.00"),
-            odds=-105
+            odds=-105,
         )
 
         db_session.add(bet1)
@@ -476,7 +486,7 @@ class TestUnifiedBetAPI:
             over_under="over",
             wager_amount=Decimal("50.00"),
             odds=-110,
-            result=BetResult.PENDING
+            result=BetResult.PENDING,
         )
         db_session.add(bet)
         await db_session.commit()
@@ -493,7 +503,9 @@ class TestUnifiedBetAPI:
         data = response.json()
         assert data["updated_at"] is not None
 
-    async def test_create_bet_with_minimal_data(self, client: AsyncClient, db_session: AsyncSession):
+    async def test_create_bet_with_minimal_data(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
         """Test creating a bet with only required fields"""
         minimal_data = {
             "bet_type": "spread",
@@ -504,7 +516,7 @@ class TestUnifiedBetAPI:
             "prop_description": "Lakers -5.5",
             "prop_line": "5.5",
             "wager_amount": "100.00",
-            "odds": -110
+            "odds": -110,
         }
 
         response = await client.post("/api/v1/bets", json=minimal_data)
@@ -516,7 +528,9 @@ class TestUnifiedBetAPI:
         assert data["notes"] is None
         assert data["payout"] is None
 
-    async def test_get_bets_with_team_filter_partial_match(self, client: AsyncClient, db_session: AsyncSession):
+    async def test_get_bets_with_team_filter_partial_match(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
         """Test team filter with partial string matching (ilike)"""
         bet = Bet(
             bet_type=BetType.PLAYER_PROP,
@@ -529,7 +543,7 @@ class TestUnifiedBetAPI:
             prop_line=Decimal("25.5"),
             over_under="over",
             wager_amount=Decimal("50.00"),
-            odds=-110
+            odds=-110,
         )
         db_session.add(bet)
         await db_session.commit()
@@ -541,7 +555,9 @@ class TestUnifiedBetAPI:
         assert len(data) == 1
         assert data[0]["team"] == "Lakers"
 
-    async def test_get_bets_with_player_name_filter_partial_match(self, client: AsyncClient, db_session: AsyncSession):
+    async def test_get_bets_with_player_name_filter_partial_match(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
         """Test player name filter with partial string matching (ilike)"""
         bet = Bet(
             bet_type=BetType.PLAYER_PROP,
@@ -554,7 +570,7 @@ class TestUnifiedBetAPI:
             prop_line=Decimal("25.5"),
             over_under="over",
             wager_amount=Decimal("50.00"),
-            odds=-110
+            odds=-110,
         )
         db_session.add(bet)
         await db_session.commit()
@@ -566,7 +582,9 @@ class TestUnifiedBetAPI:
         assert len(data) == 1
         assert data[0]["player_name"] == "LeBron James"
 
-    async def test_update_bet_with_exclude_unset(self, client: AsyncClient, db_session: AsyncSession):
+    async def test_update_bet_with_exclude_unset(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
         """Test that bet update only updates provided fields"""
         bet = Bet(
             bet_type=BetType.PLAYER_PROP,
@@ -581,7 +599,7 @@ class TestUnifiedBetAPI:
             wager_amount=Decimal("50.00"),
             odds=-110,
             result=BetResult.PENDING,
-            notes="Original note"
+            notes="Original note",
         )
         db_session.add(bet)
         await db_session.commit()
@@ -629,7 +647,7 @@ class TestAnalyticsAPI:
             over_under="over",
             wager_amount=Decimal("50.00"),
             odds=-110,
-            result=BetResult.WIN
+            result=BetResult.WIN,
         )
         player_bet_loss = Bet(
             bet_type=BetType.PLAYER_PROP,
@@ -643,7 +661,7 @@ class TestAnalyticsAPI:
             over_under="over",
             wager_amount=Decimal("75.00"),
             odds=120,
-            result=BetResult.LOSS
+            result=BetResult.LOSS,
         )
         player_bet_pending = Bet(
             bet_type=BetType.PLAYER_PROP,
@@ -657,7 +675,7 @@ class TestAnalyticsAPI:
             over_under="under",
             wager_amount=Decimal("40.00"),
             odds=-105,
-            result=BetResult.PENDING
+            result=BetResult.PENDING,
         )
 
         # Create non-player bets (team props, game totals, spreads)
@@ -672,7 +690,7 @@ class TestAnalyticsAPI:
             over_under="over",
             wager_amount=Decimal("50.00"),
             odds=-110,
-            result=BetResult.WIN
+            result=BetResult.WIN,
         )
         game_total_loss = Bet(
             bet_type=BetType.GAME_TOTAL,
@@ -685,13 +703,12 @@ class TestAnalyticsAPI:
             over_under="under",
             wager_amount=Decimal("75.00"),
             odds=105,
-            result=BetResult.LOSS
+            result=BetResult.LOSS,
         )
 
-        db_session.add_all([
-            player_bet_win, player_bet_loss, player_bet_pending,
-            team_bet_win, game_total_loss
-        ])
+        db_session.add_all(
+            [player_bet_win, player_bet_loss, player_bet_pending, team_bet_win, game_total_loss]
+        )
         await db_session.commit()
 
         response = await client.get("/api/v1/bets/analytics/summary")
@@ -714,53 +731,105 @@ class TestAnalyticsAPI:
         assert data["team_bets"]["losses"] == 1
         assert data["team_bets"]["win_rate"] == 50.0
 
-    async def test_get_bet_summary_with_comprehensive_data(self, client: AsyncClient, db_session: AsyncSession):
+    async def test_get_bet_summary_with_comprehensive_data(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
         """Test analytics endpoint with comprehensive test data to cover all scenarios"""
         # Create comprehensive test data to cover all analytics paths
         bets = [
             # Player props
             Bet(
-                bet_type=BetType.PLAYER_PROP, bet_placed_date=datetime(2025, 10, 1, 18, 0, 0),
-                game_date=datetime(2025, 10, 1, 20, 0, 0), team="LAL", opponent="GSW",
-                player_name="LeBron James", prop_type=PropType.POINTS, prop_line=Decimal("25.5"),
-                over_under="over", wager_amount=Decimal("50.00"), odds=-110, result=BetResult.WIN
+                bet_type=BetType.PLAYER_PROP,
+                bet_placed_date=datetime(2025, 10, 1, 18, 0, 0),
+                game_date=datetime(2025, 10, 1, 20, 0, 0),
+                team="LAL",
+                opponent="GSW",
+                player_name="LeBron James",
+                prop_type=PropType.POINTS,
+                prop_line=Decimal("25.5"),
+                over_under="over",
+                wager_amount=Decimal("50.00"),
+                odds=-110,
+                result=BetResult.WIN,
             ),
             Bet(
-                bet_type=BetType.PLAYER_PROP, bet_placed_date=datetime(2025, 10, 2, 18, 0, 0),
-                game_date=datetime(2025, 10, 2, 20, 0, 0), team="BOS", opponent="MIA",
-                player_name="Jayson Tatum", prop_type=PropType.ASSISTS, prop_line=Decimal("6.5"),
-                over_under="under", wager_amount=Decimal("30.00"), odds=110, result=BetResult.LOSS
+                bet_type=BetType.PLAYER_PROP,
+                bet_placed_date=datetime(2025, 10, 2, 18, 0, 0),
+                game_date=datetime(2025, 10, 2, 20, 0, 0),
+                team="BOS",
+                opponent="MIA",
+                player_name="Jayson Tatum",
+                prop_type=PropType.ASSISTS,
+                prop_line=Decimal("6.5"),
+                over_under="under",
+                wager_amount=Decimal("30.00"),
+                odds=110,
+                result=BetResult.LOSS,
             ),
             Bet(
-                bet_type=BetType.PLAYER_PROP, bet_placed_date=datetime(2025, 10, 3, 18, 0, 0),
-                game_date=datetime(2025, 10, 3, 20, 0, 0), team="GSW", opponent="LAC",
-                player_name="Stephen Curry", prop_type=PropType.THREE_POINTERS, prop_line=Decimal("4.5"),
-                over_under="over", wager_amount=Decimal("25.00"), odds=-105, result=BetResult.PENDING
+                bet_type=BetType.PLAYER_PROP,
+                bet_placed_date=datetime(2025, 10, 3, 18, 0, 0),
+                game_date=datetime(2025, 10, 3, 20, 0, 0),
+                team="GSW",
+                opponent="LAC",
+                player_name="Stephen Curry",
+                prop_type=PropType.THREE_POINTERS,
+                prop_line=Decimal("4.5"),
+                over_under="over",
+                wager_amount=Decimal("25.00"),
+                odds=-105,
+                result=BetResult.PENDING,
             ),
             # Team/other bets
             Bet(
-                bet_type=BetType.TEAM_PROP, bet_placed_date=datetime(2025, 10, 4, 18, 0, 0),
-                game_date=datetime(2025, 10, 4, 20, 0, 0), team="MIL", opponent="CHI",
-                prop_description="Milwaukee Bucks Total Points", prop_line=Decimal("115.5"),
-                over_under="over", wager_amount=Decimal("75.00"), odds=-110, result=BetResult.WIN
+                bet_type=BetType.TEAM_PROP,
+                bet_placed_date=datetime(2025, 10, 4, 18, 0, 0),
+                game_date=datetime(2025, 10, 4, 20, 0, 0),
+                team="MIL",
+                opponent="CHI",
+                prop_description="Milwaukee Bucks Total Points",
+                prop_line=Decimal("115.5"),
+                over_under="over",
+                wager_amount=Decimal("75.00"),
+                odds=-110,
+                result=BetResult.WIN,
             ),
             Bet(
-                bet_type=BetType.GAME_TOTAL, bet_placed_date=datetime(2025, 10, 5, 18, 0, 0),
-                game_date=datetime(2025, 10, 5, 20, 0, 0), team="PHI", opponent="BRK",
-                prop_description="PHI vs BRK Game Total", prop_line=Decimal("220.5"),
-                over_under="under", wager_amount=Decimal("100.00"), odds=105, result=BetResult.LOSS
+                bet_type=BetType.GAME_TOTAL,
+                bet_placed_date=datetime(2025, 10, 5, 18, 0, 0),
+                game_date=datetime(2025, 10, 5, 20, 0, 0),
+                team="PHI",
+                opponent="BRK",
+                prop_description="PHI vs BRK Game Total",
+                prop_line=Decimal("220.5"),
+                over_under="under",
+                wager_amount=Decimal("100.00"),
+                odds=105,
+                result=BetResult.LOSS,
             ),
             Bet(
-                bet_type=BetType.SPREAD, bet_placed_date=datetime(2025, 10, 6, 18, 0, 0),
-                game_date=datetime(2025, 10, 6, 20, 0, 0), team="DEN", opponent="SAS",
-                prop_description="Denver Nuggets -7.5", prop_line=Decimal("7.5"),
-                wager_amount=Decimal("50.00"), odds=-110, result=BetResult.WIN
+                bet_type=BetType.SPREAD,
+                bet_placed_date=datetime(2025, 10, 6, 18, 0, 0),
+                game_date=datetime(2025, 10, 6, 20, 0, 0),
+                team="DEN",
+                opponent="SAS",
+                prop_description="Denver Nuggets -7.5",
+                prop_line=Decimal("7.5"),
+                wager_amount=Decimal("50.00"),
+                odds=-110,
+                result=BetResult.WIN,
             ),
             Bet(
-                bet_type=BetType.MONEYLINE, bet_placed_date=datetime(2025, 10, 7, 18, 0, 0),
-                game_date=datetime(2025, 10, 7, 20, 0, 0), team="CLE", opponent="DET",
-                prop_description="Cleveland Cavaliers ML", prop_line=Decimal("1.0"),
-                wager_amount=Decimal("40.00"), odds=150, result=BetResult.PENDING
+                bet_type=BetType.MONEYLINE,
+                bet_placed_date=datetime(2025, 10, 7, 18, 0, 0),
+                game_date=datetime(2025, 10, 7, 20, 0, 0),
+                team="CLE",
+                opponent="DET",
+                prop_description="Cleveland Cavaliers ML",
+                prop_line=Decimal("1.0"),
+                wager_amount=Decimal("40.00"),
+                odds=150,
+                result=BetResult.PENDING,
             ),
         ]
 
@@ -791,7 +860,9 @@ class TestAnalyticsAPI:
         assert data["team_bets"]["losses"] == 1
         assert data["team_bets"]["win_rate"] == 66.67
 
-    async def test_all_database_operations_coverage(self, client: AsyncClient, db_session: AsyncSession):
+    async def test_all_database_operations_coverage(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
         """Test to ensure all database operations in routers are covered"""
         # This test ensures all db operations like commit, refresh, get are executed
 
@@ -807,7 +878,7 @@ class TestAnalyticsAPI:
             "prop_line": "25.5",
             "over_under": "over",
             "wager_amount": "50.00",
-            "odds": -110
+            "odds": -110,
         }
         create_response = await client.post("/api/v1/bets", json=create_data)
         assert create_response.status_code == 200

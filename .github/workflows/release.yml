@@ -15,34 +15,34 @@ jobs:
   release:
     name: Create Release
     runs-on: ubuntu-latest
-    
+
     permissions:
       contents: write
       pull-requests: read
-    
+
     steps:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
-    
+
     - name: Set up Node.js 20
       uses: actions/setup-node@v4
       with:
         node-version: '20.19'
         cache: 'npm'
         cache-dependency-path: frontend/package-lock.json
-    
+
     - name: Set up Python 3.13
       uses: actions/setup-python@v5
       with:
         python-version: '3.13'
-    
+
     - name: Install uv
       uses: astral-sh/setup-uv@v3
       with:
         version: "latest"
         enable-cache: true
-    
+
     - name: Get release tag
       id: get_tag
       run: |
@@ -51,7 +51,7 @@ jobs:
         else
           echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
         fi
-    
+
     - name: Install dependencies and run tests
       run: |
         # Frontend
@@ -59,7 +59,7 @@ jobs:
         npm ci
         npm run lint
         npm run build
-        
+
         # Backend
         cd ../backend
         uv venv --python 3.13
@@ -67,13 +67,13 @@ jobs:
         uv run ruff check .
         uv run ruff format --check .
         uv run pytest
-    
+
     - name: Build release artifacts
       run: |
         # Create frontend build archive
         cd frontend
         tar -czf ../frontend-build-${{ steps.get_tag.outputs.tag }}.tar.gz dist/
-        
+
         # Create backend source archive
         cd ../backend
         tar -czf ../backend-source-${{ steps.get_tag.outputs.tag }}.tar.gz \
@@ -82,41 +82,41 @@ jobs:
           --exclude='*.pyc' \
           --exclude='.pytest_cache' \
           .
-        
+
         cd ..
         echo "Built release artifacts for ${{ steps.get_tag.outputs.tag }}"
-    
+
     - name: Generate changelog
       id: changelog
       run: |
         TAG="${{ steps.get_tag.outputs.tag }}"
-        
+
         # Get previous tag
         PREVIOUS_TAG=$(git tag --sort=-version:refname | grep -A1 "^$TAG$" | tail -n1)
         if [ -z "$PREVIOUS_TAG" ] || [ "$PREVIOUS_TAG" = "$TAG" ]; then
           PREVIOUS_TAG=$(git rev-list --max-parents=0 HEAD)
         fi
-        
+
         echo "## Changes in $TAG" > CHANGELOG.md
         echo "" >> CHANGELOG.md
-        
+
         # Get commits since previous tag
         if [ "$PREVIOUS_TAG" != "$TAG" ]; then
           git log $PREVIOUS_TAG..$TAG --pretty=format:"* %s (%h)" --reverse >> CHANGELOG.md
         else
           git log --pretty=format:"* %s (%h)" --reverse >> CHANGELOG.md
         fi
-        
+
         echo "" >> CHANGELOG.md
         echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/$PREVIOUS_TAG...$TAG" >> CHANGELOG.md
-        
+
         # Set output for release body
         {
           echo 'body<<EOF'
           cat CHANGELOG.md
           echo EOF
         } >> $GITHUB_OUTPUT
-    
+
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
@@ -130,24 +130,24 @@ jobs:
           backend-source-${{ steps.get_tag.outputs.tag }}.tar.gz
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    
+
     - name: Build and save Docker images
       run: |
         TAG="${{ steps.get_tag.outputs.tag }}"
-        
+
         # Build Docker images
         docker compose build
-        
+
         # Tag images with release version
         docker tag nba-bets-backend:latest nba-bets-backend:$TAG
         docker tag nba-bets-frontend:latest nba-bets-frontend:$TAG
-        
+
         # Save images as compressed archives
         docker save nba-bets-backend:$TAG | gzip > backend-docker-$TAG.tar.gz
         docker save nba-bets-frontend:$TAG | gzip > frontend-docker-$TAG.tar.gz
-        
+
         echo "Built Docker images for $TAG"
-    
+
     - name: Upload Docker images to release
       uses: softprops/action-gh-release@v1
       with:
@@ -157,7 +157,7 @@ jobs:
           frontend-docker-${{ steps.get_tag.outputs.tag }}.tar.gz
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    
+
     - name: Summary
       run: |
         echo "🎉 Release ${{ steps.get_tag.outputs.tag }} created successfully!"

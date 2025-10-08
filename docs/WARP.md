@@ -155,6 +155,11 @@ npm run test -- PlayerBets.test.tsx
 
 ### Key Configuration
 
+**Configuration Files**:
+- Root `pyproject.toml`: Project metadata and tool configuration (Commitizen)
+- Backend `pyproject.toml`: Python dependencies, Ruff, pytest, coverage settings
+- Frontend `package.json`: Node.js dependencies and scripts
+
 **Environment Variables** (backend `.env`):
 - `POSTGRES_*`: Database connection settings
 - `DEBUG`: Development mode flag

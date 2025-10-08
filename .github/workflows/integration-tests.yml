@@ -13,7 +13,7 @@ jobs:
   integration:
     name: Full Stack Integration Tests
     runs-on: ubuntu-latest
-    
+
     services:
       postgres:
         image: postgres:16
@@ -31,28 +31,28 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
-    
+
     - name: Set up Python 3.13
       uses: actions/setup-python@v5
       with:
         python-version: '3.13'
-    
+
     - name: Set up Node.js 20
       uses: actions/setup-node@v4
       with:
         node-version: '20.19'
         cache: 'npm'
         cache-dependency-path: frontend/package-lock.json
-    
+
     - name: Install uv
       uses: astral-sh/setup-uv@v3
       with:
         version: "latest"
         enable-cache: true
-    
+
     - name: Cache Docker layers
       uses: actions/cache@v4
       with:
@@ -60,34 +60,34 @@ jobs:
         key: ${{ runner.os }}-buildx-${{ github.sha }}
         restore-keys: |
           ${{ runner.os }}-buildx-
-    
+
     - name: Build Docker images
       run: |
         docker compose build --build-arg BUILDKIT_INLINE_CACHE=1
       env:
         DOCKER_BUILDKIT: 1
         COMPOSE_DOCKER_CLI_BUILD: 1
-    
+
     - name: Start services
       run: |
         docker compose up -d
         echo "Waiting for services to be ready..."
         sleep 30
-    
+
     - name: Check service health
       run: |
         # Check if backend is responding
         timeout 60 bash -c 'until curl -f http://localhost:8000/docs; do echo "Waiting for backend..."; sleep 5; done'
-        
+
         # Check if frontend is responding
         timeout 60 bash -c 'until curl -f http://localhost:5173; do echo "Waiting for frontend..."; sleep 5; done'
-        
+
         echo "All services are healthy!"
-    
+
     - name: Run database migrations
       run: |
         docker compose exec -T backend alembic upgrade head
-    
+
     - name: Seed test data
       run: |
         docker compose exec -T backend python -c "
@@ -96,7 +96,7 @@ jobs:
         from app.models.bet import PlayerBet, TeamBet, BetType, BetResult, PropType
         from datetime import datetime, date
         from decimal import Decimal
-        
+
         async def seed_data():
             async for db in get_db():
                 # Create sample player bet
@@ -117,7 +117,7 @@ jobs:
                     created_at=datetime.now()
                 )
                 db.add(player_bet)
-                
+
                 # Create sample team bet
                 team_bet = TeamBet(
                     bet_type=BetType.TEAM_PROP,
@@ -134,34 +134,34 @@ jobs:
                     created_at=datetime.now()
                 )
                 db.add(team_bet)
-                
+
                 await db.commit()
                 print('Test data seeded successfully!')
                 break
-        
+
         asyncio.run(seed_data())
         "
-    
+
     - name: Run API integration tests
       run: |
         # Test API endpoints
         echo "Testing API endpoints..."
-        
+
         # Test health endpoint
         curl -f http://localhost:8000/docs
-        
+
         # Test player bets endpoint
         RESPONSE=$(curl -s http://localhost:8000/api/v1/bets/player)
         echo "Player bets response: $RESPONSE"
-        
+
         # Test team bets endpoint
         RESPONSE=$(curl -s http://localhost:8000/api/v1/bets/team)
         echo "Team bets response: $RESPONSE"
-        
+
         # Test analytics endpoint
         RESPONSE=$(curl -s http://localhost:8000/api/v1/bets/analytics/summary)
         echo "Analytics response: $RESPONSE"
-        
+
         # Create new bet via API
         curl -X POST http://localhost:8000/api/v1/bets/player \\\n          -H "Content-Type: application/json" \\\n          -d '{
             "bet_type": "PLAYER_PROP",
@@ -176,45 +176,45 @@ jobs:
             "prop_line": 27.5,
             "over_under": "Over"
           }'
-    
+
     - name: Run frontend integration tests
       working-directory: frontend
       run: |
         # Install frontend dependencies
         npm ci
-        
+
         # Build frontend
         npm run build
-        
+
         echo "Frontend integration tests completed!"
-    
+
     - name: Run end-to-end tests
       run: |
         # Test full user workflow
         echo "Testing end-to-end user workflow..."
-        
+
         # Verify frontend can load
         FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5173)
         if [ "$FRONTEND_STATUS" != "200" ]; then
           echo "Frontend not accessible, status: $FRONTEND_STATUS"
           exit 1
         fi
-        
+
         # Verify API is accessible from frontend context
         API_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/api/v1/bets/player)
         if [ "$API_STATUS" != "200" ]; then
           echo "API not accessible, status: $API_STATUS"
           exit 1
         fi
-        
+
         echo "End-to-end tests passed!"
-    
+
     - name: Collect logs
       if: always()
       run: |
         echo "=== Docker Compose Logs ==="
         docker compose logs
-    
+
     - name: Upload logs
       uses: actions/upload-artifact@v4
       if: failure()
@@ -223,7 +223,7 @@ jobs:
         path: |
           docker-compose-logs.txt
         retention-days: 7
-    
+
     - name: Cleanup
       if: always()
       run: |

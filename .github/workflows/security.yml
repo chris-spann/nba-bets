@@ -13,33 +13,33 @@ jobs:
   dependency-audit:
     name: Dependency Vulnerability Audit
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up Node.js 20
       uses: actions/setup-node@v4
       with:
         node-version: '20.19'
         cache: 'npm'
         cache-dependency-path: frontend/package-lock.json
-    
+
     - name: Set up Python 3.13
       uses: actions/setup-python@v5
       with:
         python-version: '3.13'
-    
+
     - name: Install uv
       uses: astral-sh/setup-uv@v3
       with:
         version: "latest"
-    
+
     - name: Frontend Dependency Audit
       working-directory: frontend
       run: |
         npm ci
         npm audit --audit-level=moderate
-    
+
     - name: Backend Dependency Audit
       working-directory: backend
       run: |
@@ -51,16 +51,16 @@ jobs:
   secrets-scan:
     name: Secrets Scanning
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
-    
+
     - name: Run basic secret detection
       run: |
         echo "Checking for potential secrets..."
-        
+
         # Basic patterns to look for
         PATTERNS=(
           "password\s*=\s*['\"][^'\"\s]{8,}"
@@ -70,7 +70,7 @@ jobs:
           "AKIA[0-9A-Z]{16}"
           "-----BEGIN [A-Z ]+-----"
         )
-        
+
         FOUND_ISSUES=false
         for pattern in "${PATTERNS[@]}"; do
           if grep -r -i -E "$pattern" . --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=.venv; then
@@ -78,7 +78,7 @@ jobs:
             FOUND_ISSUES=true
           fi
         done
-        
+
         if [ "$FOUND_ISSUES" = "true" ]; then
           echo "❌ Potential secrets detected. Please review the above findings."
           exit 1
@@ -89,41 +89,41 @@ jobs:
   backend-security:
     name: Backend Security Analysis
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up Python 3.13
       uses: actions/setup-python@v5
       with:
         python-version: '3.13'
-    
+
     - name: Install uv
       uses: astral-sh/setup-uv@v3
       with:
         version: "latest"
         enable-cache: true
-    
+
     - name: Install dependencies
       working-directory: backend
       run: |
         uv venv --python 3.13
         uv pip install -r requirements-dev.txt
-    
+
     - name: Run Bandit Security Linter
       working-directory: backend
       run: |
         uv pip install bandit[toml]
         uv run bandit -r app/ -f json -o bandit-report.json || true
         uv run bandit -r app/ -f txt
-    
+
     - name: Run Safety (Dependency Vulnerability Check)
       working-directory: backend
       run: |
         uv pip install safety
         uv run safety check --json --output safety-report.json || true
         uv run safety check
-    
+
     - name: Upload Security Reports
       uses: actions/upload-artifact@v4
       if: always()
@@ -137,31 +137,31 @@ jobs:
   frontend-security:
     name: Frontend Security Analysis
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up Node.js 20
       uses: actions/setup-node@v4
       with:
         node-version: '20.19'
         cache: 'npm'
         cache-dependency-path: frontend/package-lock.json
-    
+
     - name: Install dependencies
       working-directory: frontend
       run: npm ci
-    
+
     - name: Run npm audit
       working-directory: frontend
       run: |
         npm audit --audit-level=moderate --json > npm-audit-report.json || true
         npm audit --audit-level=moderate
-    
+
     - name: Run ESLint (includes built-in security rules)
       working-directory: frontend
       run: npm run lint
-    
+
     - name: Upload Security Reports
       uses: actions/upload-artifact@v4
       if: always()
@@ -178,25 +178,25 @@ jobs:
       actions: read
       contents: read
       security-events: write
-    
+
     strategy:
       fail-fast: false
       matrix:
         language: [ 'javascript', 'python' ]
-    
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-    
+
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v3
       with:
         languages: ${{ matrix.language }}
         queries: security-extended,security-and-quality
-    
+
     - name: Autobuild
       uses: github/codeql-action/autobuild@v3
-    
+
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
       with:

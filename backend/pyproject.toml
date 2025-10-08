@@ -29,7 +29,7 @@ line-length = 100
 
 [tool.ruff]
 line-length = 100
-target-version = "py313"
+target-version = "py312"
 
 [tool.ruff.lint]
 # Enable pycodestyle (`E`) and Pyflakes (`F`) codes by default.
@@ -72,9 +72,11 @@ fixable = ["ALL"]
 unfixable = []
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S101", "PLR2004", "S106", "ARG002", "PLC0415"]  # Allow unused args and imports in tests
+"tests/*" = ["S101", "PLR2004", "S106", "ARG001", "ARG002", "PLC0415"]  # Allow unused args and imports in tests
 "scripts/*" = ["T201", "F541", "RUF001"]  # Allow print statements and f-strings in scripts
 "alembic/*" = ["F401", "E402", "W291", "W292"]  # Allow unused imports, non-top-level imports, and whitespace issues in migrations
+"app/core/config.py" = ["RUF012"]  # Allow mutable class attributes without ClassVar for Config
+"app/models/*" = ["A003"]  # Allow shadowing builtins like 'id' in SQLModel models
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]
@@ -112,4 +114,8 @@ dev = [
     "autoflake>=2.2.1",
     "aiosqlite>=0.21.0",
     "greenlet>=3.0.0",
+    "ty==0.0.1a21",
+    "yamllint>=1.35.0",
+    "bandit>=1.7.5",
+    "safety>=3.0.0",
 ]

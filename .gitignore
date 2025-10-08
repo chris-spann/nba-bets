@@ -217,3 +217,8 @@ localhost:*
 *.log
 npm-debug.log*
 .npm/_logs/
+
+# Pre-commit
+bandit-report.json
+.mypy_cache/
+.ruff_cache/
