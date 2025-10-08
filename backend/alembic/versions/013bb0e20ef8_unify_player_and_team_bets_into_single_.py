@@ -82,41 +82,53 @@ def upgrade() -> None:
         create_type=False,
     )
 
-    op.create_table(
-        "bets",
-        sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column(
-            "bet_type",
-            bettype_enum,
-            nullable=False,
-        ),
-        sa.Column("bet_placed_date", sa.DateTime(), nullable=False),
-        sa.Column("game_date", sa.DateTime(), nullable=False),
-        sa.Column("team", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-        sa.Column("opponent", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-        sa.Column("wager_amount", sa.Numeric(scale=2), nullable=False),
-        sa.Column("odds", sa.Integer(), nullable=False),
-        sa.Column(
-            "result",
-            betresult_enum,
-            nullable=False,
-        ),
-        sa.Column("payout", sa.Numeric(scale=2), nullable=True),
-        sa.Column("notes", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-        sa.Column("created_at", sa.DateTime(), nullable=False),
-        sa.Column("updated_at", sa.DateTime(), nullable=True),
-        sa.Column("player_name", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-        sa.Column(
-            "prop_type",
-            proptype_enum,
-            nullable=True,
-        ),
-        sa.Column("prop_line", sa.Numeric(scale=1), nullable=True),
-        sa.Column("over_under", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-        sa.Column("prop_description", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-        sa.Column("actual_value", sa.Numeric(scale=1), nullable=True),
-        sa.PrimaryKeyConstraint("id"),
-    )
+    # Check if bets table already exists
+    connection = op.get_bind()
+    table_exists = connection.execute(
+        sa.text("""
+            SELECT EXISTS (
+                SELECT 1 FROM information_schema.tables
+                WHERE table_schema = 'public' AND table_name = 'bets'
+            )
+        """)
+    ).scalar()
+
+    if not table_exists:
+        op.create_table(
+            "bets",
+            sa.Column("id", sa.Integer(), nullable=False),
+            sa.Column(
+                "bet_type",
+                bettype_enum,
+                nullable=False,
+            ),
+            sa.Column("bet_placed_date", sa.DateTime(), nullable=False),
+            sa.Column("game_date", sa.DateTime(), nullable=False),
+            sa.Column("team", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+            sa.Column("opponent", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+            sa.Column("wager_amount", sa.Numeric(scale=2), nullable=False),
+            sa.Column("odds", sa.Integer(), nullable=False),
+            sa.Column(
+                "result",
+                betresult_enum,
+                nullable=False,
+            ),
+            sa.Column("payout", sa.Numeric(scale=2), nullable=True),
+            sa.Column("notes", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+            sa.Column("created_at", sa.DateTime(), nullable=False),
+            sa.Column("updated_at", sa.DateTime(), nullable=True),
+            sa.Column("player_name", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+            sa.Column(
+                "prop_type",
+                proptype_enum,
+                nullable=True,
+            ),
+            sa.Column("prop_line", sa.Numeric(scale=1), nullable=True),
+            sa.Column("over_under", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+            sa.Column("prop_description", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+            sa.Column("actual_value", sa.Numeric(scale=1), nullable=True),
+            sa.PrimaryKeyConstraint("id"),
+        )
 
     # Drop legacy tables if they exist (they may have been created by SQLModel auto-creation)
     # This ensures a clean schema with only the unified bets table
