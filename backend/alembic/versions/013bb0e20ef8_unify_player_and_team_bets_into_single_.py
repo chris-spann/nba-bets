@@ -117,7 +117,9 @@ def upgrade() -> None:
         sa.Column("actual_value", sa.Numeric(scale=1), nullable=True),
         sa.PrimaryKeyConstraint("id"),
     )
-    # Drop old tables if they exist
+
+    # Drop legacy tables if they exist (they may have been created by SQLModel auto-creation)
+    # This ensures a clean schema with only the unified bets table
     op.execute("DROP TABLE IF EXISTS player_bets CASCADE")
     op.execute("DROP TABLE IF EXISTS team_bets CASCADE")
     # ### end Alembic commands ###
