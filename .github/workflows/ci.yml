@@ -2,9 +2,9 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
 
 permissions:
   contents: read
@@ -197,7 +197,11 @@ jobs:
           # Test creating bets
           curl -s -X POST http://localhost:8000/api/v1/bets \
             -H "Content-Type: application/json" \
-            -d '{"bet_type": "player_prop", "bet_placed_date": "2024-01-16T10:00:00", "game_date": "2024-01-16T19:00:00", "team": "BOS", "opponent": "MIA", "wager_amount": 75.00, "odds": -120, "result": "pending", "player_name": "Jayson Tatum", "prop_type": "points", "prop_line": 27.5, "over_under": "over"}'
+            -d '{"bet_type": "player_prop", "bet_placed_date": "2024-01-16T10:00:00",
+                 "game_date": "2024-01-16T19:00:00", "team": "BOS", "opponent": "MIA",
+                 "wager_amount": 75.00, "odds": -120, "result": "pending",
+                 "player_name": "Jayson Tatum", "prop_type": "points",
+                 "prop_line": 27.5, "over_under": "over"}'
 
           # Test frontend-backend connectivity
           FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5173)
@@ -294,24 +298,17 @@ jobs:
             };
 
             const passed = Object.values(checks).every(result => result === 'success');
-            const status = passed ? "✅ All checks passed!" : "❌ Some checks failed";
+            const status = passed ? '✅ All checks passed!' : '❌ Some checks failed';
 
             const checksList = Object.entries(checks)
-              .map(([name, result]) => `- **${name}**: ${result === 'success' ? '✅' : '❌'} ${result}`)
+              .map(([name, result]) => `- ${name}: ${result === 'success' ? '✅' : '❌'} ${result}`)
               .join('\n');
 
-            const comment = `## 🤖 CI Pipeline Results
-
-**Status**: ${status}
-
-### Check Results:
-${checksList}
-
-${passed ?
-  "🎉 This PR is ready for review!" :
-  "⚠️  Please review the failed checks and fix any issues."
-}`;
-
+            const comment = `## 🤖 CI Pipeline Results\n\n` +
+                          `Status: ${status}\n\n` +
+                          `### Check Results:\n${checksList}\n\n` +
+                          (passed ? '🎉 This PR is ready for review!' :
+                                   '⚠️ Please review the failed checks and fix any issues.');
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
