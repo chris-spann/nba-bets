@@ -18,7 +18,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:15
+        image: postgres:16
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -68,12 +68,16 @@ jobs:
       - name: Run backend tests with coverage
         run: make test-backend-coverage
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/nba_bets_test
+          POSTGRES_SERVER: localhost
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: nba_bets_test
+          POSTGRES_PORT: 5432
 
       - name: Upload backend coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
-          file: ./backend/htmlcov/index.html
+          file: ./backend/coverage.xml
           flags: backend
           name: backend-coverage
 
@@ -112,7 +116,7 @@ jobs:
         run: make test-frontend-coverage
 
       - name: Upload frontend coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           file: ./frontend/coverage/lcov.info
           flags: frontend
