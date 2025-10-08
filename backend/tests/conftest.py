@@ -71,7 +71,7 @@ async def db_session():
 
 
 @pytest_asyncio.fixture
-async def client(db_session):
+async def client(db_session: AsyncSession):
     """Create a test client for making HTTP requests"""
     from httpx import ASGITransport
 
@@ -95,7 +95,7 @@ def sample_player_bet_data():
         "over_under": "over",
         "wager_amount": "50.00",
         "odds": -110,
-        "notes": "Test player bet"
+        "notes": "Test player bet",
     }
 
 
@@ -113,5 +113,5 @@ def sample_team_bet_data():
         "over_under": "over",
         "wager_amount": "50.00",
         "odds": -110,
-        "notes": "Test team bet"
+        "notes": "Test team bet",
     }

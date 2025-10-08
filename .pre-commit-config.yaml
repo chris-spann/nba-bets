@@ -1,0 +1,108 @@
+repos:
+  # Basic file quality checks (built-in hooks)
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^(.*\.md|.*\.txt)$
+      - id: end-of-file-fixer
+        exclude: ^(.*\.md|.*\.txt)$
+      - id: check-toml
+      - id: check-xml
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-symlinks
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: detect-private-key
+      - id: detect-aws-credentials
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+
+  # Code quality checks using Makefile commands
+  - repo: local
+    hooks:
+      # Backend code quality
+      - id: format-backend
+        name: Format Backend Code (Ruff)
+        entry: make format-backend
+        language: system
+        files: ^backend/.*\.py$
+        pass_filenames: false
+
+      # Frontend code quality
+      - id: check-lint-frontend
+        name: Frontend Linting & Type Checking
+        entry: make check-lint-frontend
+        language: system
+        files: ^frontend/.*\.(ts|tsx|js|jsx)$
+        pass_filenames: false
+
+      # YAML validation (essential for CI workflows)
+      - id: check-yaml
+        name: Check YAML files
+        entry: make check-yaml
+        language: system
+        files: ^.*\.ya?ml$
+        pass_filenames: false
+      #
+      # - id: check-json
+      #   name: Check JSON files
+      #   entry: make check-json
+      #   language: system
+      #   files: ^.*\.json$
+      #   exclude: ^(frontend/package-lock\.json|frontend/tsconfig.*\.json)$
+      #   pass_filenames: false
+      #
+      # - id: type-check
+      #   name: Python Type Checking (ty) - Pre-release software
+      #   entry: make type-check
+      #   language: system
+      #   files: ^backend/.*\.py$
+      #   exclude: ^backend/(tests/|alembic/)
+      #   pass_filenames: false
+      #   continue-on-error: true
+      #
+      # - id: check-security
+      #   name: Basic Security Checks
+      #   entry: make check-security
+      #   language: system
+      #   files: ^.*\.(py|js|ts|tsx|yaml|yml|json)$
+      #   pass_filenames: false
+      #
+      # - id: lint-docker
+      #   name: Lint Dockerfiles (requires hadolint)
+      #   entry: make lint-docker
+      #   language: system
+      #   files: ^.*Dockerfile.*$
+      #   pass_filenames: false
+
+      # Optional: Tests (commented out for speed)
+      # - id: test-backend
+      #   name: Backend Tests
+      #   entry: make test-backend
+      #   language: system
+      #   files: ^backend/
+      #   pass_filenames: false
+      #
+      # - id: test-frontend
+      #   name: Frontend Tests
+      #   entry: make test-frontend
+      #   language: system
+      #   files: ^frontend/
+      #   pass_filenames: false
+
+# Configuration for pre-commit.ci
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit hooks
+
+    for more information, see https://pre-commit.ci
+  autofix_prs: true
+  autoupdate_branch: ''
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  skip: []  # All hooks are essential now
+  submodules: false
