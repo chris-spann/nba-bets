@@ -28,8 +28,8 @@ def generate_description(
     """
     # Handle PropType enum or string
     prop_type_str = None
-
-    prop_type_str = prop_type.value if hasattr(prop_type, "value") else str(prop_type)
+    if prop_type is not None:
+        prop_type_str = prop_type.value if hasattr(prop_type, "value") else str(prop_type)
 
     if bet_type == BetType.PLAYER_PROP and player_name and prop_type_str:
         return f"{player_name}-{prop_type_str}"
