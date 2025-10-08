@@ -123,8 +123,8 @@ class BetBase(SQLModel):
     updated_at: datetime | None = None
 
 
-class PlayerBet(BetBase, table=True):
-    """Legacy player prop bet model - kept for compatibility"""
+class PlayerBet(BetBase, table=False):
+    """Legacy player prop bet model - kept for compatibility (no table creation)"""
 
     __tablename__ = "player_bets"
     id: int | None = Field(default=None, primary_key=True)
@@ -135,8 +135,8 @@ class PlayerBet(BetBase, table=True):
     actual_value: Decimal | None = Field(default=None, decimal_places=1)
 
 
-class TeamBet(BetBase, table=True):
-    """Legacy team prop bet model - kept for compatibility"""
+class TeamBet(BetBase, table=False):
+    """Legacy team prop bet model - kept for compatibility (no table creation)"""
 
     __tablename__ = "team_bets"
     id: int | None = Field(default=None, primary_key=True)

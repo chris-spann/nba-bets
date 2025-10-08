@@ -78,7 +78,7 @@ make format-frontend  # Frontend formatting
 uv run pytest tests/test_bets.py::test_create_player_bet -v
 
 # Frontend (from frontend/ directory)
-npm run test -- PlayerBets.test.tsx
+npm run test -- PropBets.test.tsx
 ```
 
 ## Architecture Overview
@@ -101,13 +101,14 @@ npm run test -- PlayerBets.test.tsx
 - **Astral Stack**: Modern Python tooling (uv + ruff + ty)
 
 **Core Models**:
-- `PlayerBet`: Tracks individual player prop bets (points, rebounds, assists, etc.)
-- `TeamBet`: Tracks team-level prop bets and totals
-- Both inherit from `BetBase` with common fields (odds, wager, result, payout)
+- `Bet`: Unified model for all bet types (player props, team props, spreads, totals, moneylines)
+- `BetType`: Enum for different bet categories (PLAYER_PROP, TEAM_PROP, GAME_TOTAL, SPREAD, MONEYLINE)
+- `PropType`: Enum for player prop types (POINTS, REBOUNDS, ASSISTS, etc.)
+- `BetResult`: Enum for bet outcomes (WIN, LOSS, PUSH, PENDING, CANCELLED)
 
 **API Structure**:
-- `/api/v1/bets/player/*` - Player bet CRUD operations
-- `/api/v1/bets/team/*` - Team bet CRUD operations  
+- `/api/v1/bets/` - Unified bet CRUD operations for all bet types
+- `/api/v1/bets/{id}` - Individual bet operations
 - `/api/v1/bets/analytics/summary` - Performance analytics
 
 **Database Schema**:
@@ -125,8 +126,8 @@ npm run test -- PlayerBets.test.tsx
 
 **Key Pages/Components**:
 - `Dashboard`: Performance overview and recent activity
-- `PlayerBets`/`TeamBets`: Bet listing and management
-- `AddBet`: Bet entry forms
+- `PropBets`: Unified bet listing and management for all bet types
+- `AddBet`: Bet entry forms supporting all bet types
 - `Layout`: Navigation and common UI structure
 
 **API Integration**:
