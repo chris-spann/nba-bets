@@ -40,7 +40,6 @@ class PropType(str, Enum):
     RA = "ra"
 
 
-
 class Bet(SQLModel, table=True):
     """Unified bet model for all bet types"""
 
@@ -50,7 +49,9 @@ class Bet(SQLModel, table=True):
 
     # Common fields for all bet types
     bet_type: BetType
-    bet_placed_date: datetime = Field(default_factory=lambda: datetime.now(UTC).replace(tzinfo=None))
+    bet_placed_date: datetime = Field(
+        default_factory=lambda: datetime.now(UTC).replace(tzinfo=None)
+    )
     game_date: datetime
     team: str
     opponent: str
@@ -75,6 +76,7 @@ class Bet(SQLModel, table=True):
 
 class BetCreate(SQLModel):
     """Model for creating new bets"""
+
     bet_type: BetType
     bet_placed_date: datetime
     game_date: datetime
@@ -97,6 +99,7 @@ class BetCreate(SQLModel):
 
 class BetUpdate(SQLModel):
     """Model for updating existing bets"""
+
     result: BetResult | None = None
     actual_value: Decimal | None = None
     payout: Decimal | None = None
@@ -106,6 +109,7 @@ class BetUpdate(SQLModel):
 # Legacy models for backward compatibility (if needed)
 class BetBase(SQLModel):
     """Base model for bet data - kept for compatibility"""
+
     bet_type: BetType
     game_date: datetime
     team: str
@@ -119,8 +123,9 @@ class BetBase(SQLModel):
     updated_at: datetime | None = None
 
 
-class PlayerBet(BetBase, table=True):
-    """Legacy player prop bet model - kept for compatibility"""
+class PlayerBet(BetBase, table=False):
+    """Legacy player prop bet model - kept for compatibility (no table creation)"""
+
     __tablename__ = "player_bets"
     id: int | None = Field(default=None, primary_key=True)
     player_name: str
@@ -130,8 +135,9 @@ class PlayerBet(BetBase, table=True):
     actual_value: Decimal | None = Field(default=None, decimal_places=1)
 
 
-class TeamBet(BetBase, table=True):
-    """Legacy team prop bet model - kept for compatibility"""
+class TeamBet(BetBase, table=False):
+    """Legacy team prop bet model - kept for compatibility (no table creation)"""
+
     __tablename__ = "team_bets"
     id: int | None = Field(default=None, primary_key=True)
     prop_description: str
@@ -143,6 +149,7 @@ class TeamBet(BetBase, table=True):
 # Additional Pydantic models for API compatibility
 class PlayerBetCreate(SQLModel):
     """Legacy model for creating player bets - kept for compatibility"""
+
     bet_type: BetType = BetType.PLAYER_PROP
     game_date: datetime
     team: str
@@ -158,6 +165,7 @@ class PlayerBetCreate(SQLModel):
 
 class TeamBetCreate(SQLModel):
     """Legacy model for creating team bets - kept for compatibility"""
+
     bet_type: BetType = BetType.TEAM_PROP
     game_date: datetime
     team: str

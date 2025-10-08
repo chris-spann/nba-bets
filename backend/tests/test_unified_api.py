@@ -10,7 +10,9 @@ from app.models.bet import Bet, BetResult, BetType, PropType
 class TestUnifiedBetAPI:
     """Test unified bet API endpoints"""
 
-    async def test_create_player_bet(self, client: AsyncClient, db_session: AsyncSession, sample_player_bet_data):
+    async def test_create_player_bet(
+        self, client: AsyncClient, db_session: AsyncSession, sample_player_bet_data
+    ):
         """Test creating a player bet"""
         response = await client.post("/api/v1/bets", json=sample_player_bet_data)
 
@@ -25,7 +27,9 @@ class TestUnifiedBetAPI:
         assert data["game_date"] is not None
         assert data["id"] is not None
 
-    async def test_create_team_bet(self, client: AsyncClient, db_session: AsyncSession, sample_team_bet_data):
+    async def test_create_team_bet(
+        self, client: AsyncClient, db_session: AsyncSession, sample_team_bet_data
+    ):
         """Test creating a team bet"""
         response = await client.post("/api/v1/bets", json=sample_team_bet_data)
 
@@ -58,7 +62,7 @@ class TestUnifiedBetAPI:
             over_under="over",
             wager_amount=Decimal("50.00"),
             odds=-110,
-            result=BetResult.WIN
+            result=BetResult.WIN,
         )
         bet2 = Bet(
             bet_type=BetType.TEAM_PROP,
@@ -71,7 +75,7 @@ class TestUnifiedBetAPI:
             over_under="over",
             wager_amount=Decimal("75.00"),
             odds=-110,
-            result=BetResult.LOSS
+            result=BetResult.LOSS,
         )
 
         db_session.add(bet1)
@@ -100,7 +104,7 @@ class TestUnifiedBetAPI:
             prop_description="LeBron James Points",
             wager_amount=Decimal("50.00"),
             odds=-110,
-            result=BetResult.PENDING
+            result=BetResult.PENDING,
         )
         db_session.add(bet)
         await db_session.commit()
@@ -126,7 +130,7 @@ class TestUnifiedBetAPI:
             prop_description="LeBron James Points",
             wager_amount=Decimal("50.00"),
             odds=-110,
-            result=BetResult.PENDING
+            result=BetResult.PENDING,
         )
         db_session.add(bet)
         await db_session.commit()
@@ -136,7 +140,7 @@ class TestUnifiedBetAPI:
             "result": "win",
             "actual_value": "28.0",
             "payout": "95.45",
-            "notes": "Updated bet result"
+            "notes": "Updated bet result",
         }
 
         response = await client.patch(f"/api/v1/bets/{bet.id}", json=update_data)

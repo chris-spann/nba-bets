@@ -25,7 +25,9 @@ async def create_bet(bet: BetCreate, db: AsyncSession = Depends(get_db_session))
     # Auto-generate prop_description for player props if not provided
     bet_data = bet.model_dump()
     if bet.bet_type == BetType.PLAYER_PROP and not bet.prop_description and bet.prop_type:
-        bet_data["prop_description"] = f"{bet.player_name} {bet.prop_type.value.replace('_', ' ').title()}"
+        bet_data["prop_description"] = (
+            f"{bet.player_name} {bet.prop_type.value.replace('_', ' ').title()}"
+        )
 
     db_bet = Bet(**bet_data)
     db.add(db_bet)
@@ -165,7 +167,10 @@ async def get_bet_summary(db: AsyncSession = Depends(get_db_session)):
             "wins": player_win_count,
             "losses": player_loss_count,
             "win_rate": round(
-                (player_win_count / (player_win_count + player_loss_count) * 100) if (player_win_count + player_loss_count) > 0 else 0, 2
+                (player_win_count / (player_win_count + player_loss_count) * 100)
+                if (player_win_count + player_loss_count) > 0
+                else 0,
+                2,
             ),
         },
         "team_bets": {
@@ -173,7 +178,10 @@ async def get_bet_summary(db: AsyncSession = Depends(get_db_session)):
             "wins": team_win_count,
             "losses": team_loss_count,
             "win_rate": round(
-                (team_win_count / (team_win_count + team_loss_count) * 100) if (team_win_count + team_loss_count) > 0 else 0, 2
+                (team_win_count / (team_win_count + team_loss_count) * 100)
+                if (team_win_count + team_loss_count) > 0
+                else 0,
+                2,
             ),
         },
     }
