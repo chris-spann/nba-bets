@@ -125,7 +125,7 @@ def upgrade() -> None:
             ),
             sa.Column("prop_line", sa.Numeric(scale=1), nullable=True),
             sa.Column("over_under", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-            sa.Column("prop_description", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+            sa.Column("description", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
             sa.Column("actual_value", sa.Numeric(scale=1), nullable=True),
             sa.PrimaryKeyConstraint("id"),
         )

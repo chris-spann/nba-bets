@@ -107,8 +107,8 @@ format-frontend: ## Format frontend code
 check-format-backend: ## Check backend code formatting (no fixes)
 	cd backend && uv run ruff check . && uv run ruff format --check .
 
-check-lint-frontend: ## Check frontend linting and types
-	cd frontend && npm run lint && npx tsc --noEmit
+check-lint-frontend: ## Check frontend linting and types (with auto-fix)
+	cd frontend && npm run format && npx tsc --noEmit
 
 check-yaml: ## Check YAML files (also available via: cd backend && uv run yamllint)
 	@command -v yamllint >/dev/null 2>&1 || { echo "yamllint not found, installing..."; pip install yamllint; }

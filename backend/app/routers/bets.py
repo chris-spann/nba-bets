@@ -18,15 +18,44 @@ from app.models.bet import (
 router = APIRouter(prefix="/bets", tags=["bets"])
 
 
+def generate_description(
+    bet_type: BetType, team: str | None = None, player_name: str | None = None, prop_type=None
+) -> str:
+    """Generate description based on bet type and data following the pattern:
+    - Player Props: '{player_name}-{prop_type}'
+    - Team Props: '{team}-{prop_type}'
+    - Non-Props: '{team}-{bet_type}'
+    """
+    # Handle PropType enum or string
+    prop_type_str = None
+    if prop_type is not None:
+        prop_type_str = prop_type.value if hasattr(prop_type, "value") else str(prop_type)
+
+    if bet_type == BetType.PLAYER_PROP and player_name and prop_type_str:
+        return f"{player_name}-{prop_type_str}"
+    if bet_type == BetType.TEAM_PROP and team and prop_type_str:
+        return f"{team}-{prop_type_str}"
+    if bet_type in [BetType.SPREAD, BetType.MONEYLINE] and team:
+        return f"{team}-{bet_type.value}"
+    # Fallback for incomplete data
+    if player_name:
+        return player_name
+    if team:
+        return team
+    return "Unknown"
+
+
 # Unified Bet Endpoints
 @router.post("", response_model=Bet)
 async def create_bet(bet: BetCreate, db: AsyncSession = Depends(get_db_session)):
     """Create a new bet (player prop, team prop, or any other bet type)"""
-    # Auto-generate prop_description for player props if not provided
+    # Convert to dict and let Bet model auto-generate description if needed
     bet_data = bet.model_dump()
-    if bet.bet_type == BetType.PLAYER_PROP and not bet.prop_description and bet.prop_type:
-        bet_data["prop_description"] = (
-            f"{bet.player_name} {bet.prop_type.value.replace('_', ' ').title()}"
+
+    # Auto-generate description based on bet type if not provided
+    if not bet.description:
+        bet_data["description"] = generate_description(
+            bet.bet_type, bet.team, bet.player_name, bet.prop_type
         )
 
     db_bet = Bet(**bet_data)
@@ -80,15 +109,27 @@ async def get_bet(bet_id: int, db: AsyncSession = Depends(get_db_session)):
 async def update_bet(
     bet_id: int, bet_update: BetUpdate, db: AsyncSession = Depends(get_db_session)
 ):
-    """Update a bet (typically to set result and actual value)"""
+    """Update a bet (supports both partial PATCH and full PUT updates)"""
     bet = await db.get(Bet, bet_id)
     if not bet:
         raise HTTPException(status_code=404, detail="Bet not found")
 
     # Update fields that are not None
     update_data = bet_update.model_dump(exclude_unset=True)
+
+    # Check if any fields that affect description have changed
+    description_affecting_fields = ["bet_type", "team", "player_name", "prop_type"]
+    description_fields_changed = any(field in update_data for field in description_affecting_fields)
+
+    # Apply updates
     for field, value in update_data.items():
         setattr(bet, field, value)
+
+    # Recalculate description if relevant fields changed and description wasn't explicitly set
+    if description_fields_changed and "description" not in update_data:
+        bet.description = generate_description(
+            bet.bet_type, bet.team, bet.player_name, bet.prop_type
+        )
 
     # Always set updated_at when updating
     bet.updated_at = datetime.now(UTC).replace(tzinfo=None)
@@ -96,6 +137,47 @@ async def update_bet(
     await db.commit()
     await db.refresh(bet)
     return bet
+
+
+@router.put("/{bet_id}", response_model=Bet)
+async def replace_bet(bet_id: int, bet_data: BetCreate, db: AsyncSession = Depends(get_db_session)):
+    """Replace a bet entirely (PUT operation)"""
+    bet = await db.get(Bet, bet_id)
+    if not bet:
+        raise HTTPException(status_code=404, detail="Bet not found")
+
+    # Convert new data to dict
+    new_data = bet_data.model_dump()
+
+    # Auto-generate description if not provided
+    if not bet_data.description:
+        new_data["description"] = generate_description(
+            bet_data.bet_type, bet_data.team, bet_data.player_name, bet_data.prop_type
+        )
+
+    # Update all fields
+    for field, value in new_data.items():
+        if hasattr(bet, field):
+            setattr(bet, field, value)
+
+    # Always set updated_at when updating
+    bet.updated_at = datetime.now(UTC).replace(tzinfo=None)
+
+    await db.commit()
+    await db.refresh(bet)
+    return bet
+
+
+@router.delete("/{bet_id}")
+async def delete_bet(bet_id: int, db: AsyncSession = Depends(get_db_session)):
+    """Delete a bet"""
+    bet = await db.get(Bet, bet_id)
+    if not bet:
+        raise HTTPException(status_code=404, detail="Bet not found")
+
+    await db.delete(bet)
+    await db.commit()
+    return {"message": "Bet deleted successfully"}
 
 
 # Analytics Endpoints

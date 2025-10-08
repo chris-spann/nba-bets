@@ -18,7 +18,6 @@ class TestEnums:
         """Test BetType enum values"""
         assert BetType.PLAYER_PROP == "player_prop"
         assert BetType.TEAM_PROP == "team_prop"
-        assert BetType.GAME_TOTAL == "game_total"
         assert BetType.SPREAD == "spread"
         assert BetType.MONEYLINE == "moneyline"
 
@@ -156,7 +155,8 @@ class TestTeamBet:
             game_date=datetime(2025, 10, 7, 20, 0, 0),
             team="BOS",
             opponent="MIA",
-            prop_description="Boston Celtics Total Points",
+            prop_type=PropType.POINTS,
+            description="BOS-points",
             prop_line=Decimal("112.5"),
             over_under="over",
             wager_amount=Decimal("50.00"),
@@ -169,7 +169,7 @@ class TestTeamBet:
         assert bet.game_date == datetime(2025, 10, 7, 20, 0, 0)
         assert bet.team == "BOS"
         assert bet.opponent == "MIA"
-        assert bet.prop_description == "Boston Celtics Total Points"
+        assert bet.description == "BOS-points"
         assert bet.prop_line == Decimal("112.5")
         assert bet.over_under == "over"
         assert bet.wager_amount == Decimal("50.00")
@@ -184,7 +184,7 @@ class TestTeamBet:
             game_date=datetime(2025, 10, 7, 20, 0, 0),
             team="MIL",
             opponent="CHI",
-            prop_description="Milwaukee Bucks -5.5",
+            description="MIL-spread",
             prop_line=Decimal("5.5"),
             over_under=None,  # Spread doesn't use over/under
             wager_amount=Decimal("100.00"),
@@ -196,15 +196,15 @@ class TestTeamBet:
         assert bet.over_under is None
         assert bet.prop_line == Decimal("5.5")
 
-    def test_team_bet_game_total(self):
-        """Test Bet for game total"""
+    def test_team_bet_with_prop_type(self):
+        """Test team prop bet with prop_type"""
         bet = Bet(
-            bet_type=BetType.GAME_TOTAL,
+            bet_type=BetType.TEAM_PROP,
             bet_placed_date=datetime(2025, 10, 7, 18, 0, 0),
             game_date=datetime(2025, 10, 7, 20, 0, 0),
             team="LAL",
             opponent="GSW",
-            prop_description="Game Total Points",
+            prop_type=PropType.POINTS,
             prop_line=Decimal("225.5"),
             over_under="under",
             wager_amount=Decimal("75.00"),
@@ -214,7 +214,8 @@ class TestTeamBet:
             payout=Decimal("0.00"),
         )
 
-        assert bet.bet_type == BetType.GAME_TOTAL
+        assert bet.bet_type == BetType.TEAM_PROP
+        assert bet.prop_type == PropType.POINTS
         assert bet.over_under == "under"
         assert bet.actual_value == Decimal("232.0")
         assert bet.payout == Decimal("0.00")
@@ -253,7 +254,7 @@ class TestCreateModels:
             game_date=datetime(2025, 10, 7, 20, 0, 0),
             team="BOS",
             opponent="MIA",
-            prop_description="Boston Celtics Total Points",
+            description="BOS-points",
             prop_line=Decimal("112.5"),
             over_under="over",
             wager_amount=Decimal("50.00"),
@@ -261,7 +262,7 @@ class TestCreateModels:
         )
 
         assert bet_create.bet_type == BetType.TEAM_PROP
-        assert bet_create.prop_description == "Boston Celtics Total Points"
+        assert bet_create.description == "BOS-points"
         assert bet_create.over_under == "over"
 
     def test_team_bet_create_without_over_under(self):
@@ -272,7 +273,7 @@ class TestCreateModels:
             game_date=datetime(2025, 10, 7, 20, 0, 0),
             team="MIL",
             opponent="CHI",
-            prop_description="Milwaukee Bucks -5.5",
+            description="MIL-spread",
             prop_line=Decimal("5.5"),
             wager_amount=Decimal("100.00"),
             odds=-110,

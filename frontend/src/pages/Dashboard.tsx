@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
 
 function formatCurrency(amount: string | undefined): string {
@@ -25,6 +26,8 @@ function getBetResultBadge(result: string) {
       return `${baseClasses} bg-gray-100 text-gray-800`
     case 'pending':
       return `${baseClasses} bg-blue-100 text-blue-800`
+    case 'cancelled':
+      return `${baseClasses} bg-yellow-100 text-yellow-800`
     default:
       return `${baseClasses} bg-gray-100 text-gray-800`
   }
@@ -120,9 +123,9 @@ export function Dashboard() {
                 <div className="text-center py-12">
                   <p className="text-sm text-gray-500">No bets recorded yet.</p>
                   <p className="text-sm text-gray-500 mt-1">
-                    <a href="/add-bet" className="text-primary-600 hover:text-primary-500">
+                    <Link to="/history" className="text-primary-600 hover:text-primary-500 font-medium">
                       Add your first bet
-                    </a>
+                    </Link>
                   </p>
                 </div>
               ) : (

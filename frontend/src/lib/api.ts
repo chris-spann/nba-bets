@@ -10,7 +10,7 @@ export interface Bet {
   opponent: string
   player_name?: string // Optional - only for player bets
   prop_type?: string // Optional - only for player bets
-  prop_description?: string // Optional - for team/game bets
+  description?: string // Calculated description based on bet type
   prop_line: string
   over_under?: string
   wager_amount: string
@@ -44,7 +44,7 @@ export interface BetSummary {
 
 // Legacy types for backwards compatibility during migration
 export type PlayerBet = Bet & { player_name: string; prop_type: string }
-export type TeamBet = Bet & { prop_description: string }
+export type TeamBet = Bet & { description: string }
 
 export class ApiClient {
   private baseUrl: string
@@ -130,7 +130,7 @@ export class ApiClient {
   async getTeamBets(): Promise<TeamBet[]> {
     const bets = await this.getBets()
     return bets.filter((bet): bet is TeamBet =>
-      bet.player_name === undefined && bet.prop_description !== undefined,
+      bet.player_name === undefined && bet.description !== undefined,
     )
   }
 

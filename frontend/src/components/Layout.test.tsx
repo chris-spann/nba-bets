@@ -35,8 +35,7 @@ describe('Layout', () => {
 
     // Check for navigation links
     expect(screen.getByText('Dashboard')).toBeInTheDocument()
-    expect(screen.getByText('Prop Bets')).toBeInTheDocument()
-    expect(screen.getByText('Add Bet')).toBeInTheDocument()
+    expect(screen.getByText('History')).toBeInTheDocument()
   })
 
   it('renders children content', () => {
@@ -78,11 +77,9 @@ describe('Layout', () => {
 
     // Check links have proper hrefs
     const dashboardLink = screen.getByRole('link', { name: /dashboard/i })
-    const propBetsLink = screen.getByRole('link', { name: /prop bets/i })
-    const addBetLink = screen.getByRole('link', { name: /add bet/i })
+    const historyLink = screen.getByRole('link', { name: /history/i })
 
     expect(dashboardLink).toHaveAttribute('href', '/')
-    expect(propBetsLink).toHaveAttribute('href', '/prop-bets')
-    expect(addBetLink).toHaveAttribute('href', '/add-bet')
+    expect(historyLink).toHaveAttribute('href', '/history')
   })
 })

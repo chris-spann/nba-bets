@@ -8,7 +8,6 @@ from sqlmodel import Field, SQLModel
 class BetType(str, Enum):
     PLAYER_PROP = "player_prop"
     TEAM_PROP = "team_prop"
-    GAME_TOTAL = "game_total"
     SPREAD = "spread"
     MONEYLINE = "moneyline"
 
@@ -28,13 +27,13 @@ class PropType(str, Enum):
     STEALS = "steals"
     BLOCKS = "blocks"
     TURNOVERS = "turnovers"
+    THREE_POINTERS = "threes"  # Match frontend
+    PRA = "pra"
+    # Legacy prop types (keeping for backward compatibility)
     FIELD_GOALS_MADE = "field_goals_made"
     FREE_THROWS_MADE = "free_throws_made"
     DOUBLE_DOUBLE = "double_double"
     TRIPLE_DOUBLE = "triple_double"
-    # Additional prop types for the enum
-    THREE_POINTERS = "threes"  # Updated to match frontend
-    PRA = "pra"
     PR = "pr"
     PA = "pa"
     RA = "ra"
@@ -68,10 +67,28 @@ class Bet(SQLModel, table=True):
     prop_type: PropType | None = None
 
     # Prop fields (used by both player and team props)
-    prop_description: str | None = None  # Auto-generated for player props, manual for others
-    prop_line: Decimal = Field(decimal_places=1)
+    description: str | None = None  # Auto-generated based on bet type
+    prop_line: Decimal | None = Field(default=None, decimal_places=1)  # Not required for moneyline
     over_under: str | None = None  # "over" or "under", not required for spread/moneyline
     actual_value: Decimal | None = Field(default=None, decimal_places=1)
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        # Auto-generate description if not provided
+        if not self.description:
+            self.description = self._generate_description()
+
+    def _generate_description(self) -> str:
+        """Generate description based on bet type and data"""
+        if self.bet_type == BetType.PLAYER_PROP and self.player_name:
+            return self.player_name
+        if self.bet_type == BetType.TEAM_PROP and self.team:
+            return self.team
+        if self.bet_type == BetType.SPREAD and self.team:
+            return f"{self.team} {self.prop_line}"
+        if self.bet_type == BetType.MONEYLINE and self.team:
+            return self.team
+        return self.team or "Unknown"
 
 
 class BetCreate(SQLModel):
@@ -88,8 +105,8 @@ class BetCreate(SQLModel):
     # Optional fields that depend on bet type
     player_name: str | None = None
     prop_type: PropType | None = None
-    prop_description: str | None = None
-    prop_line: Decimal
+    description: str | None = None  # Will be auto-generated if not provided
+    prop_line: Decimal | None = None  # Not required for moneyline
     over_under: str | None = None
     result: BetResult = BetResult.PENDING
     actual_value: Decimal | None = None
@@ -100,6 +117,18 @@ class BetCreate(SQLModel):
 class BetUpdate(SQLModel):
     """Model for updating existing bets"""
 
+    bet_type: BetType | None = None
+    bet_placed_date: datetime | None = None
+    game_date: datetime | None = None
+    team: str | None = None
+    opponent: str | None = None
+    player_name: str | None = None
+    prop_type: PropType | None = None
+    description: str | None = None
+    prop_line: Decimal | None = None
+    over_under: str | None = None
+    wager_amount: Decimal | None = None
+    odds: int | None = None
     result: BetResult | None = None
     actual_value: Decimal | None = None
     payout: Decimal | None = None
@@ -140,7 +169,7 @@ class TeamBet(BetBase, table=False):
 
     __tablename__ = "team_bets"
     id: int | None = Field(default=None, primary_key=True)
-    prop_description: str
+    description: str
     prop_line: Decimal = Field(decimal_places=1)
     over_under: str | None = Field(default=None, regex="^(over|under)$")
     actual_value: Decimal | None = Field(default=None, decimal_places=1)
@@ -170,7 +199,7 @@ class TeamBetCreate(SQLModel):
     game_date: datetime
     team: str
     opponent: str
-    prop_description: str
+    description: str
     prop_line: Decimal
     over_under: str | None = None
     wager_amount: Decimal
